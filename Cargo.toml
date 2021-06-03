@@ -1,0 +1,11 @@
+[package]
+name = "sdvx-controller-firmware"
+version = "0.1.0"
+authors = ["Linas Nikiperavičius <linas@linasdev.com>"]
+edition = "2018"
+
+[dependencies]
+cortex-m = "0.7.2"
+cortex-m-rt = "0.6.14"
+cortex-m-semihosting = "0.3.7"
+panic-halt = "0.2.0"
