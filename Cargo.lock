@@ -242,6 +242,7 @@ dependencies = [
  "cortex-m 0.7.2",
  "cortex-m-rt",
  "cortex-m-semihosting",
+ "embedded-hal",
  "panic-semihosting",
  "stm32f1xx-hal",
  "usb-device",
