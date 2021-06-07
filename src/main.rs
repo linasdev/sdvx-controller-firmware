@@ -130,7 +130,10 @@ fn poll_usb() {
     let usb_hid = unsafe { USB_HID.as_mut().unwrap() };
     let usb_dev = unsafe { USB_DEV.as_mut().unwrap() };
 
-    usb_dev.poll(&mut [usb_hid]);
+    if usb_dev.poll(&mut [usb_hid]) {
+        let mut data = [0u8, 64];
+        usb_hid.pull_raw_output(&mut data);
+    }
 }
 
 #[interrupt]
