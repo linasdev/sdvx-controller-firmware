@@ -72,7 +72,7 @@ fn main() -> ! {
             .device_release(0x0001) // 00.01
             .self_powered(false)
             .manufacturer("Linas Nikiperavičius <linas@linasdev.com>")
-            .product("SVDX Controller")
+            .product("SDVX Controller")
             .max_power(500) // 500mA
             .build();
 
