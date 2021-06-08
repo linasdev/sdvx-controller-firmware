@@ -1,5 +1,5 @@
 # Sound Voltex Controller Firmware
-This repository contains firmware for an open-sorce sound voltex controller.
+This repository contains firmware for an open-sorce [Sound Voltex](https://en.wikipedia.org/wiki/Sound_Voltex) controller.
 
 # Getting Started
 
