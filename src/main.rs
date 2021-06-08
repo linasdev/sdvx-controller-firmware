@@ -5,23 +5,23 @@ use panic_semihosting as _;
 
 use cortex_m_rt::entry;
 use embedded_hal::digital::v2::InputPin;
-use stm32f1xx_hal::{prelude::*, gpio};
+use stm32f1xx_hal::prelude::*;
 use stm32f1xx_hal::usb::{Peripheral, UsbBus, UsbBusType};
 use stm32f1xx_hal::stm32::{interrupt, Interrupt};
 use stm32f1xx_hal::pac::{Peripherals, NVIC};
-use stm32f1xx_hal::gpio::{ExtiPin, Edge, Input, PullDown};
 use usb_device::prelude::*;
 use usb_device::bus::UsbBusAllocator;
 use usbd_hid::descriptor::generator_prelude::*;
 use usbd_hid::descriptor::KeyboardReport;
 use usbd_hid::hid_class::HIDClass;
 
+use crate::keycode::KeyCode;
+
+mod keycode;
+
 static mut USB_BUS: Option<UsbBusAllocator<UsbBusType>> = None;
 static mut USB_HID: Option<HIDClass<UsbBusType>> = None;
 static mut USB_DEV: Option<UsbDevice<UsbBusType>> = None;
-
-static mut INPUT: Option<gpio::gpioa::PA7<Input<PullDown>>> = None;
-static mut STATE: bool = false;
 
 #[entry]
 fn main() -> ! {
@@ -41,17 +41,12 @@ fn main() -> ! {
 
     assert!(clocks.usbclk_valid());
 
-    let mut afio = dp.AFIO.constrain(&mut rcc.apb2);
-
     let mut gpioa = dp.GPIOA.split(&mut rcc.apb2);
-    let mut input = gpioa.pa7.into_pull_down_input(&mut gpioa.crl);
-    input.make_interrupt_source(&mut afio);
-    input.trigger_on_edge(&dp.EXTI, Edge::RISING_FALLING);
-    input.enable_interrupt(&dp.EXTI);
 
-    unsafe {
-        INPUT = Some(input);
-    }
+    let button1_input = gpioa.pa1.into_pull_down_input(&mut gpioa.crl);
+    let button2_input = gpioa.pa2.into_pull_down_input(&mut gpioa.crl);
+    let button3_input = gpioa.pa3.into_pull_down_input(&mut gpioa.crl);
+    let button4_input = gpioa.pa4.into_pull_down_input(&mut gpioa.crl);
 
     let usb = Peripheral {
         usb: dp.USB,
@@ -84,45 +79,70 @@ fn main() -> ! {
     unsafe {
         NVIC::unmask(Interrupt::USB_HP_CAN_TX);
         NVIC::unmask(Interrupt::USB_LP_CAN_RX0);
-        NVIC::unmask(Interrupt::EXTI9_5);
     }
 
     let usb_hid = unsafe { USB_HID.as_ref().unwrap() };
 
-    let report1 = KeyboardReport {
+    let rollover_error_report = KeyboardReport {
         modifier: 0x00,
         leds: 0x00,
         keycodes: [
-            0x30,
-            0x00,
-            0x00,
-            0x00,
-            0x00,
-            0x00,
+            KeyCode::ErrorRollOver as u8,
+            KeyCode::ErrorRollOver as u8,
+            KeyCode::ErrorRollOver as u8,
+            KeyCode::ErrorRollOver as u8,
+            KeyCode::ErrorRollOver as u8,
+            KeyCode::ErrorRollOver as u8,
         ],
     };
-
-    let report2 = KeyboardReport {
-        modifier: 0x00,
-        leds: 0x00,
-        keycodes: [
-            0x00,
-            0x00,
-            0x00,
-            0x00,
-            0x00,
-            0x00,
-        ],
-    };
-
-    let state = unsafe { &STATE };
 
     loop {
-        if *state {
-            usb_hid.push_input(&report1);
-        } else {
-            usb_hid.push_input(&report2);
+        let mut keycodes = [0u8; 6];
+        let mut current_keycode = 0;
+
+        if button1_input.is_high().unwrap() {
+            keycodes[current_keycode] = KeyCode::E as u8;
+            current_keycode += 1;
+            if current_keycode >= 6 {
+                usb_hid.push_input(&rollover_error_report);
+                continue;
+            }
         }
+        
+        if button2_input.is_high().unwrap() {
+            keycodes[current_keycode] = KeyCode::R as u8;
+            current_keycode += 1;
+            if current_keycode >= 6 {
+                usb_hid.push_input(&rollover_error_report);
+                continue;
+            }
+        }
+
+        if button3_input.is_high().unwrap() {
+            keycodes[current_keycode] = KeyCode::I as u8;
+            current_keycode += 1;
+            if current_keycode >= 6 {
+                usb_hid.push_input(&rollover_error_report);
+                continue;
+            }
+        }
+
+        if button4_input.is_high().unwrap() {
+            keycodes[current_keycode] = KeyCode::O as u8;
+            current_keycode += 1;
+            if current_keycode >= 6 {
+                usb_hid.push_input(&rollover_error_report);
+                continue;
+            }
+        }
+
+        let report = KeyboardReport {
+            modifier: 0x00,
+            leds: 0x00,
+            keycodes,
+        };
+
+        usb_hid.push_input(&report);
     }
 }
 
@@ -133,23 +153,6 @@ fn poll_usb() {
     if usb_dev.poll(&mut [usb_hid]) {
         let mut data = [0u8, 64];
         usb_hid.pull_raw_output(&mut data);
-    }
-}
-
-#[interrupt]
-fn EXTI9_5() {
-    let input = unsafe { INPUT.as_mut().unwrap() };
-
-    if input.check_interrupt() {
-        let state = unsafe { &mut STATE };
-
-        if input.is_high().unwrap() {
-            *state = true;
-        } else {
-            *state = false;
-        }
-
-        input.clear_interrupt_pending_bit();
     }
 }
 
