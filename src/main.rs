@@ -9,6 +9,8 @@ use stm32f1xx_hal::prelude::*;
 use stm32f1xx_hal::usb::{Peripheral, UsbBus, UsbBusType};
 use stm32f1xx_hal::stm32::{interrupt, Interrupt};
 use stm32f1xx_hal::pac::{Peripherals, NVIC};
+use stm32f1xx_hal::gpio::{ExtiPin, Edge, Input, PullUp};
+use stm32f1xx_hal::gpio::gpioa::{PA7, PA8, PA9, PA10};
 use usb_device::prelude::*;
 use usb_device::bus::UsbBusAllocator;
 use usbd_hid::descriptor::generator_prelude::*;
@@ -22,6 +24,14 @@ mod keycode;
 static mut USB_BUS: Option<UsbBusAllocator<UsbBusType>> = None;
 static mut USB_HID: Option<HIDClass<UsbBusType>> = None;
 static mut USB_DEV: Option<UsbDevice<UsbBusType>> = None;
+
+static mut ROTARY1_CLOCK_INPUT: Option<PA7<Input<PullUp>>> = None;
+static mut ROTARY1_DATA_INPUT: Option<PA8<Input<PullUp>>> = None;
+static mut ROTARY1_COUNTER: i8 = 0;
+
+static mut ROTARY2_CLOCK_INPUT: Option<PA9<Input<PullUp>>> = None;
+static mut ROTARY2_DATA_INPUT: Option<PA10<Input<PullUp>>> = None;
+static mut ROTARY2_COUNTER: i8 = 0;
 
 #[entry]
 fn main() -> ! {
@@ -41,12 +51,27 @@ fn main() -> ! {
 
     assert!(clocks.usbclk_valid());
 
+    let mut afio = dp.AFIO.constrain(&mut rcc.apb2);
     let mut gpioa = dp.GPIOA.split(&mut rcc.apb2);
 
+    let start_input = gpioa.pa0.into_pull_down_input(&mut gpioa.crl);
     let button1_input = gpioa.pa1.into_pull_down_input(&mut gpioa.crl);
     let button2_input = gpioa.pa2.into_pull_down_input(&mut gpioa.crl);
-    let button3_input = gpioa.pa3.into_pull_down_input(&mut gpioa.crl);
-    let button4_input = gpioa.pa4.into_pull_down_input(&mut gpioa.crl);
+    let fx_l_input = gpioa.pa5.into_pull_down_input(&mut gpioa.crl);
+    let fx_r_input = gpioa.pa6.into_pull_down_input(&mut gpioa.crl);
+
+    let mut rotary1_clock_input = gpioa.pa7.into_pull_up_input(&mut gpioa.crl);
+    let rotary1_data_input = gpioa.pa8.into_pull_up_input(&mut gpioa.crh);
+    rotary1_clock_input.make_interrupt_source(&mut afio);
+    rotary1_clock_input.trigger_on_edge(&dp.EXTI, Edge::FALLING);
+    rotary1_clock_input.enable_interrupt(&dp.EXTI);
+
+    let mut rotary2_clock_input = gpioa.pa9.into_pull_up_input(&mut gpioa.crh);
+    rotary2_clock_input.make_interrupt_source(&mut afio);
+    rotary2_clock_input.trigger_on_edge(&dp.EXTI, Edge::FALLING);
+    rotary2_clock_input.enable_interrupt(&dp.EXTI);
+
+    let rotary2_data_input = gpioa.pa10.into_pull_up_input(&mut gpioa.crh);
 
     let usb = Peripheral {
         usb: dp.USB,
@@ -56,6 +81,10 @@ fn main() -> ! {
 
     unsafe {
         USB_BUS = Some(UsbBus::new(usb));
+        ROTARY1_CLOCK_INPUT = Some(rotary1_clock_input);
+        ROTARY1_DATA_INPUT = Some(rotary1_data_input);
+        ROTARY2_CLOCK_INPUT = Some(rotary2_clock_input);
+        ROTARY2_DATA_INPUT = Some(rotary2_data_input);
     }
 
     let usb_bus = unsafe { USB_BUS.as_ref().unwrap() };
@@ -79,6 +108,7 @@ fn main() -> ! {
     unsafe {
         NVIC::unmask(Interrupt::USB_HP_CAN_TX);
         NVIC::unmask(Interrupt::USB_LP_CAN_RX0);
+        NVIC::unmask(Interrupt::EXTI9_5);
     }
 
     let usb_hid = unsafe { USB_HID.as_ref().unwrap() };
@@ -96,9 +126,21 @@ fn main() -> ! {
         ],
     };
 
+    let rotary1_counter = unsafe { &mut ROTARY1_COUNTER };
+    let rotary2_counter = unsafe { &mut ROTARY2_COUNTER };
+
     loop {
         let mut keycodes = [0u8; 6];
         let mut current_keycode = 0;
+
+        if start_input.is_high().unwrap() {
+            keycodes[current_keycode] = KeyCode::Kb1 as u8;
+            current_keycode += 1;
+            if current_keycode >= 6 {
+                usb_hid.push_input(&rollover_error_report);
+                continue;
+            }
+        }
 
         if button1_input.is_high().unwrap() {
             keycodes[current_keycode] = KeyCode::E as u8;
@@ -136,6 +178,60 @@ fn main() -> ! {
             }
         }
 
+        if fx_l_input.is_high().unwrap() {
+            keycodes[current_keycode] = KeyCode::C as u8;
+            current_keycode += 1;
+            if current_keycode >= 6 {
+                usb_hid.push_input(&rollover_error_report);
+                continue;
+            }
+        }
+
+        if fx_r_input.is_high().unwrap() {
+            keycodes[current_keycode] = KeyCode::Comma as u8;
+            current_keycode += 1;
+            if current_keycode >= 6 {
+                usb_hid.push_input(&rollover_error_report);
+                continue;
+            }
+        }
+
+        if *rotary1_counter < 0 {
+            *rotary1_counter = 0;
+            keycodes[current_keycode] = KeyCode::Q as u8;
+            current_keycode += 1;
+            if current_keycode >= 6 {
+                usb_hid.push_input(&rollover_error_report);
+                continue;
+            }
+        } else if *rotary1_counter > 0 {
+            *rotary1_counter = 0;
+            keycodes[current_keycode] = KeyCode::W as u8;
+            current_keycode += 1;
+            if current_keycode >= 6 {
+                usb_hid.push_input(&rollover_error_report);
+                continue;
+            }
+        }
+
+        if *rotary2_counter < 0 {
+            *rotary2_counter = 0;
+            keycodes[current_keycode] = KeyCode::P as u8;
+            current_keycode += 1;
+            if current_keycode >= 6 {
+                usb_hid.push_input(&rollover_error_report);
+                continue;
+            }
+        } else if *rotary2_counter > 0 {
+            *rotary2_counter = 0;
+            keycodes[current_keycode] = KeyCode::LBracket as u8;
+            current_keycode += 1;
+            if current_keycode >= 6 {
+                usb_hid.push_input(&rollover_error_report);
+                continue;
+            }
+        }
+
         let report = KeyboardReport {
             modifier: 0x00,
             leds: 0x00,
@@ -153,6 +249,39 @@ fn poll_usb() {
     if usb_dev.poll(&mut [usb_hid]) {
         let mut data = [0u8, 64];
         usb_hid.pull_raw_output(&mut data);
+    }
+}
+
+#[interrupt]
+fn EXTI9_5() {
+    let rotary1_clock_input = unsafe { ROTARY1_CLOCK_INPUT.as_mut().unwrap() };
+
+    if rotary1_clock_input.check_interrupt() {
+        let rotary1_data_input = unsafe { ROTARY1_DATA_INPUT.as_ref().unwrap() };
+        let rotary1_counter = unsafe { &mut ROTARY1_COUNTER };
+        
+        *rotary1_counter += if rotary1_data_input.is_high().unwrap() {
+            -1i8
+        } else {
+            1i8
+        };
+
+        rotary1_clock_input.clear_interrupt_pending_bit();
+    }
+
+    let rotary2_clock_input = unsafe { ROTARY2_CLOCK_INPUT.as_mut().unwrap() };
+
+    if rotary2_clock_input.check_interrupt() {
+        let rotary2_data_input = unsafe { ROTARY2_DATA_INPUT.as_ref().unwrap() };
+        let rotary2_counter = unsafe { &mut ROTARY2_COUNTER };
+        
+        *rotary2_counter += if rotary2_data_input.is_high().unwrap() {
+            -1i8
+        } else {
+            1i8
+        };
+
+        rotary2_clock_input.clear_interrupt_pending_bit();
     }
 }
 
