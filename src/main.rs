@@ -55,8 +55,7 @@ fn main() -> ! {
     let mut flash = dp.FLASH.constrain();
     let mut rcc = dp.RCC.constrain();
 
-    let clocks = rcc
-        .cfgr
+    rcc.cfgr
         .use_hse(8.mhz())
         .sysclk(72.mhz())
         .hclk(72.mhz())
