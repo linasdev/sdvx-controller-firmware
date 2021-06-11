@@ -88,7 +88,7 @@ fn main() -> ! {
     }
 
     let usb_bus = unsafe { USB_BUS.as_ref().unwrap() };
-    let usb_hid = HIDClass::new(usb_bus, KeyboardReport::desc(), 5);
+    let usb_hid = HIDClass::new(usb_bus, KeyboardReport::desc(), 1);
     let usb_dev = UsbDeviceBuilder::new(usb_bus, UsbVidPid(0x69af, 0x420b))
             .device_class(0x03) // HID (Human Interface Device)
             .device_sub_class(0x00) // No subclass (can't be used as a Boot Device)
@@ -128,6 +128,8 @@ fn main() -> ! {
 
     let rotary1_counter = unsafe { &mut ROTARY1_COUNTER };
     let rotary2_counter = unsafe { &mut ROTARY2_COUNTER };
+
+    let mut last_keycodes = [0u8; 6];
 
     loop {
         let mut keycodes = [0u8; 6];
@@ -231,6 +233,12 @@ fn main() -> ! {
                 continue;
             }
         }
+
+        if keycodes == last_keycodes {
+            continue;
+        }
+        
+        last_keycodes = keycodes;
 
         let report = KeyboardReport {
             modifier: 0x00,
