@@ -21,7 +21,6 @@ use crate::keycode::KeyCode;
 
 mod keycode;
 
-
 static MAX_KEYCODE_COUNT: usize = 6;
 static ROLLOVER_ERROR_REPORT: KeyboardReport = KeyboardReport {
     modifier: 0x00,
@@ -215,8 +214,6 @@ fn main() -> ! {
         if keycodes == last_keycodes {
             continue;
         }
-        
-        last_keycodes = keycodes;
 
         let report = KeyboardReport {
             modifier: 0x00,
@@ -224,7 +221,10 @@ fn main() -> ! {
             keycodes,
         };
 
-        usb_hid.push_input(&report);
+        match usb_hid.push_input(&report) {
+            Ok(_) => last_keycodes = keycodes,
+            Err(_) => {},
+        }
     }
 }
 
