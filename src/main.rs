@@ -72,6 +72,8 @@ fn main() -> ! {
     let start_input = gpioa.pa0.into_pull_down_input(&mut gpioa.crl);
     let button1_input = gpioa.pa1.into_pull_down_input(&mut gpioa.crl);
     let button2_input = gpioa.pa2.into_pull_down_input(&mut gpioa.crl);
+    let button3_input = gpioa.pa3.into_pull_down_input(&mut gpioa.crl);
+    let button4_input = gpioa.pa4.into_pull_down_input(&mut gpioa.crl);
     let fx_l_input = gpioa.pa5.into_pull_down_input(&mut gpioa.crl);
     let fx_r_input = gpioa.pa6.into_pull_down_input(&mut gpioa.crl);
 
