@@ -21,6 +21,7 @@ use crate::keycode::KeyCode;
 
 mod keycode;
 
+static ROTARY_SENSITIVITY: i8 = 1;
 static MAX_KEYCODE_COUNT: usize = 6;
 static ROLLOVER_ERROR_REPORT: KeyboardReport = KeyboardReport {
     modifier: 0x00,
@@ -177,7 +178,7 @@ fn main() -> ! {
             current_keycode += 1;
         }
 
-        if *rotary1_counter < 0 {
+        if *rotary1_counter <= -ROTARY_SENSITIVITY {
             if check_and_push_rollover(current_keycode + 1, &usb_hid) {
                 continue;
             }
@@ -185,7 +186,7 @@ fn main() -> ! {
             keycodes[current_keycode] = KeyCode::Q as u8;
             current_keycode += 1;
             *rotary1_counter = 0;
-        } else if *rotary1_counter > 0 {
+        } else if *rotary1_counter >= ROTARY_SENSITIVITY {
             if check_and_push_rollover(current_keycode + 1, &usb_hid) {
                 continue;
             }
@@ -195,14 +196,14 @@ fn main() -> ! {
             *rotary1_counter = 0;
         }
 
-        if *rotary2_counter < 0 {
+        if *rotary2_counter <= -ROTARY_SENSITIVITY {
             if check_and_push_rollover(current_keycode + 1, &usb_hid) {
                 continue;
             }
 
             keycodes[current_keycode] = KeyCode::P as u8;
             *rotary2_counter = 0;
-        } else if *rotary2_counter > 0 {
+        } else if *rotary2_counter >= ROTARY_SENSITIVITY {
             if check_and_push_rollover(current_keycode + 1, &usb_hid) {
                 continue;
             }
