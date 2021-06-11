@@ -5,14 +5,14 @@ use panic_reset as _;
 
 use cortex_m_rt::entry;
 use embedded_hal::digital::v2::InputPin;
-use stm32f1xx_hal::prelude::*;
-use stm32f1xx_hal::usb::{Peripheral, UsbBus, UsbBusType};
-use stm32f1xx_hal::stm32::{interrupt, Interrupt};
+use stm32f1xx_hal::gpio::gpioa::{PA10, PA7, PA8, PA9};
+use stm32f1xx_hal::gpio::{Edge, ExtiPin, Input, PullUp};
 use stm32f1xx_hal::pac::{Peripherals, NVIC};
-use stm32f1xx_hal::gpio::{ExtiPin, Edge, Input, PullUp};
-use stm32f1xx_hal::gpio::gpioa::{PA7, PA8, PA9, PA10};
-use usb_device::prelude::*;
+use stm32f1xx_hal::prelude::*;
+use stm32f1xx_hal::stm32::{interrupt, Interrupt};
+use stm32f1xx_hal::usb::{Peripheral, UsbBus, UsbBusType};
 use usb_device::bus::UsbBusAllocator;
+use usb_device::prelude::*;
 use usbd_hid::descriptor::generator_prelude::*;
 use usbd_hid::descriptor::KeyboardReport;
 use usbd_hid::hid_class::HIDClass;
@@ -107,15 +107,15 @@ fn main() -> ! {
     let usb_bus = unsafe { USB_BUS.as_ref().unwrap() };
     let usb_hid = HIDClass::new(usb_bus, KeyboardReport::desc(), 1);
     let usb_dev = UsbDeviceBuilder::new(usb_bus, UsbVidPid(0x69af, 0x420b))
-            .device_class(0x03) // HID (Human Interface Device)
-            .device_sub_class(0x00) // No subclass (can't be used as a Boot Device)
-            .device_protocol(0x00) // No protocol (can't be used as a Boot Device)
-            .device_release(0x0001) // 00.01
-            .self_powered(false)
-            .manufacturer("Linas Nikiperavičius <linas@linasdev.com>")
-            .product("SDVX Controller")
-            .max_power(500) // 500mA
-            .build();
+        .device_class(0x03) // HID (Human Interface Device)
+        .device_sub_class(0x00) // No subclass (can't be used as a Boot Device)
+        .device_protocol(0x00) // No protocol (can't be used as a Boot Device)
+        .device_release(0x0001) // 00.01
+        .self_powered(false)
+        .manufacturer("Linas Nikiperavičius <linas@linasdev.com>")
+        .product("SDVX Controller")
+        .max_power(500) // 500mA
+        .build();
 
     unsafe {
         USB_HID = Some(usb_hid);
@@ -151,7 +151,7 @@ fn main() -> ! {
             keycodes[current_keycode] = KeyCode::E as u8;
             current_keycode += 1;
         }
-        
+
         if button2_input.is_high().unwrap() {
             keycodes[current_keycode] = KeyCode::R as u8;
             current_keycode += 1;
@@ -228,12 +228,15 @@ fn main() -> ! {
         // Update the last_keycodes variable only if the hid report was sent successfully
         match usb_hid.push_input(&report) {
             Ok(_) => last_keycodes = keycodes,
-            Err(_) => {},
+            Err(_) => {}
         }
     }
 }
 
-fn check_and_push_rollover(keycode_count: usize, usb_hid: &HIDClass<'_, UsbBus<Peripheral>>) -> bool {
+fn check_and_push_rollover(
+    keycode_count: usize,
+    usb_hid: &HIDClass<'_, UsbBus<Peripheral>>,
+) -> bool {
     if keycode_count > MAX_KEYCODE_COUNT {
         // Ignore errors as the transmission will likely be attempted again
         // in the next loop iteration
@@ -263,7 +266,7 @@ fn EXTI9_5() {
     if rotary1_clock_input.check_interrupt() {
         let rotary1_data_input = unsafe { ROTARY1_DATA_INPUT.as_ref().unwrap() };
         let rotary1_counter = unsafe { &mut ROTARY1_COUNTER };
-        
+
         *rotary1_counter += if rotary1_data_input.is_high().unwrap() {
             -1i8
         } else {
@@ -278,7 +281,7 @@ fn EXTI9_5() {
     if rotary2_clock_input.check_interrupt() {
         let rotary2_data_input = unsafe { ROTARY2_DATA_INPUT.as_ref().unwrap() };
         let rotary2_counter = unsafe { &mut ROTARY2_COUNTER };
-        
+
         *rotary2_counter += if rotary2_data_input.is_high().unwrap() {
             -1i8
         } else {
