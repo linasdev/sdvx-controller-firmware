@@ -175,13 +175,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "546c37ac5d9e56f55e73b677106873d9d9f5190605e41a856503623648488cae"
 
 [[package]]
-name = "panic-semihosting"
-version = "0.5.6"
+name = "panic-reset"
+version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c3d55dedd501dfd02514646e0af4d7016ce36bc12ae177ef52056989966a1eec"
+checksum = "acee8535a38487c5c70d61ee87284710452cb3b265304463f20a0c5327a4a8a5"
 dependencies = [
- "cortex-m 0.7.2",
- "cortex-m-semihosting",
+ "cortex-m 0.6.7",
 ]
 
 [[package]]
@@ -243,7 +242,7 @@ dependencies = [
  "cortex-m-rt",
  "cortex-m-semihosting",
  "embedded-hal",
- "panic-semihosting",
+ "panic-reset",
  "stm32f1xx-hal",
  "usb-device",
  "usbd-hid",

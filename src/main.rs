@@ -1,7 +1,7 @@
 #![no_std]
 #![no_main]
 
-use panic_semihosting as _;
+use panic_reset as _;
 
 use cortex_m_rt::entry;
 use embedded_hal::digital::v2::InputPin;
