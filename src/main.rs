@@ -110,7 +110,7 @@ fn main() -> ! {
         .device_class(0x03) // HID (Human Interface Device)
         .device_sub_class(0x00) // No subclass (can't be used as a Boot Device)
         .device_protocol(0x00) // No protocol (can't be used as a Boot Device)
-        .device_release(0x0001) // 00.01
+        .device_release(0x0100) // 1.00
         .self_powered(false)
         .manufacturer("Linas Nikiperavičius <linas@linasdev.com>")
         .product("SDVX Controller")

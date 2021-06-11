@@ -1,6 +1,6 @@
 [package]
 name = "sdvx-controller-firmware"
-version = "0.1.0"
+version = "1.0.0"
 authors = ["Linas Nikiperavičius <linas@linasdev.com>"]
 edition = "2018"
 

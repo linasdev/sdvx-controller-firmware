@@ -236,7 +236,7 @@ dependencies = [
 
 [[package]]
 name = "sdvx-controller-firmware"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "cortex-m 0.7.2",
  "cortex-m-rt",
