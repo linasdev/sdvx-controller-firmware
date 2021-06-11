@@ -235,7 +235,9 @@ fn main() -> ! {
 
 fn check_and_push_rollover(keycode_count: usize, usb_hid: &HIDClass<'_, UsbBus<Peripheral>>) -> bool {
     if keycode_count > MAX_KEYCODE_COUNT {
-        usb_hid.push_input(&ROLLOVER_ERROR_REPORT);
+        // Ignore errors as the transmission will likely be attempted again
+        // in the next loop iteration
+        let _ = usb_hid.push_input(&ROLLOVER_ERROR_REPORT);
         return true;
     }
 
@@ -250,7 +252,7 @@ fn poll_usb() {
         // Read and discard incoming USB packets, so the interrupt flag gets cleared and
         // the mcu doesn't get stuck.
         let mut data = [0u8, 64];
-        usb_hid.pull_raw_output(&mut data);
+        let _ = usb_hid.pull_raw_output(&mut data);
     }
 }
 
