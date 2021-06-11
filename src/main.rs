@@ -21,6 +21,21 @@ use crate::keycode::KeyCode;
 
 mod keycode;
 
+
+static MAX_KEYCODE_COUNT: usize = 6;
+static ROLLOVER_ERROR_REPORT: KeyboardReport = KeyboardReport {
+    modifier: 0x00,
+    leds: 0x00,
+    keycodes: [
+        KeyCode::ErrorRollOver as u8,
+        KeyCode::ErrorRollOver as u8,
+        KeyCode::ErrorRollOver as u8,
+        KeyCode::ErrorRollOver as u8,
+        KeyCode::ErrorRollOver as u8,
+        KeyCode::ErrorRollOver as u8,
+    ],
+};
+
 static mut USB_BUS: Option<UsbBusAllocator<UsbBusType>> = None;
 static mut USB_HID: Option<HIDClass<UsbBusType>> = None;
 static mut USB_DEV: Option<UsbDevice<UsbBusType>> = None;
@@ -113,19 +128,6 @@ fn main() -> ! {
 
     let usb_hid = unsafe { USB_HID.as_ref().unwrap() };
 
-    let rollover_error_report = KeyboardReport {
-        modifier: 0x00,
-        leds: 0x00,
-        keycodes: [
-            KeyCode::ErrorRollOver as u8,
-            KeyCode::ErrorRollOver as u8,
-            KeyCode::ErrorRollOver as u8,
-            KeyCode::ErrorRollOver as u8,
-            KeyCode::ErrorRollOver as u8,
-            KeyCode::ErrorRollOver as u8,
-        ],
-    };
-
     let rotary1_counter = unsafe { &mut ROTARY1_COUNTER };
     let rotary2_counter = unsafe { &mut ROTARY2_COUNTER };
 
@@ -138,100 +140,74 @@ fn main() -> ! {
         if start_input.is_high().unwrap() {
             keycodes[current_keycode] = KeyCode::Kb1 as u8;
             current_keycode += 1;
-            if current_keycode >= 6 {
-                usb_hid.push_input(&rollover_error_report);
-                continue;
-            }
         }
 
         if button1_input.is_high().unwrap() {
             keycodes[current_keycode] = KeyCode::E as u8;
             current_keycode += 1;
-            if current_keycode >= 6 {
-                usb_hid.push_input(&rollover_error_report);
-                continue;
-            }
         }
         
         if button2_input.is_high().unwrap() {
             keycodes[current_keycode] = KeyCode::R as u8;
             current_keycode += 1;
-            if current_keycode >= 6 {
-                usb_hid.push_input(&rollover_error_report);
-                continue;
-            }
         }
 
         if button3_input.is_high().unwrap() {
             keycodes[current_keycode] = KeyCode::I as u8;
             current_keycode += 1;
-            if current_keycode >= 6 {
-                usb_hid.push_input(&rollover_error_report);
-                continue;
-            }
         }
 
         if button4_input.is_high().unwrap() {
             keycodes[current_keycode] = KeyCode::O as u8;
             current_keycode += 1;
-            if current_keycode >= 6 {
-                usb_hid.push_input(&rollover_error_report);
-                continue;
-            }
         }
 
         if fx_l_input.is_high().unwrap() {
             keycodes[current_keycode] = KeyCode::C as u8;
             current_keycode += 1;
-            if current_keycode >= 6 {
-                usb_hid.push_input(&rollover_error_report);
-                continue;
-            }
         }
 
         if fx_r_input.is_high().unwrap() {
-            keycodes[current_keycode] = KeyCode::Comma as u8;
-            current_keycode += 1;
-            if current_keycode >= 6 {
-                usb_hid.push_input(&rollover_error_report);
+            if check_and_push_rollover(current_keycode + 1, &usb_hid) {
                 continue;
             }
+
+            keycodes[current_keycode] = KeyCode::Comma as u8;
+            current_keycode += 1;
         }
 
         if *rotary1_counter < 0 {
-            *rotary1_counter = 0;
+            if check_and_push_rollover(current_keycode + 1, &usb_hid) {
+                continue;
+            }
+
             keycodes[current_keycode] = KeyCode::Q as u8;
             current_keycode += 1;
-            if current_keycode >= 6 {
-                usb_hid.push_input(&rollover_error_report);
+            *rotary1_counter = 0;
+        } else if *rotary1_counter > 0 {
+            if check_and_push_rollover(current_keycode + 1, &usb_hid) {
                 continue;
             }
-        } else if *rotary1_counter > 0 {
-            *rotary1_counter = 0;
+
             keycodes[current_keycode] = KeyCode::W as u8;
             current_keycode += 1;
-            if current_keycode >= 6 {
-                usb_hid.push_input(&rollover_error_report);
-                continue;
-            }
+            *rotary1_counter = 0;
         }
 
         if *rotary2_counter < 0 {
-            *rotary2_counter = 0;
+            if check_and_push_rollover(current_keycode + 1, &usb_hid) {
+                continue;
+            }
+
             keycodes[current_keycode] = KeyCode::P as u8;
-            current_keycode += 1;
-            if current_keycode >= 6 {
-                usb_hid.push_input(&rollover_error_report);
-                continue;
-            }
-        } else if *rotary2_counter > 0 {
             *rotary2_counter = 0;
-            keycodes[current_keycode] = KeyCode::LBracket as u8;
-            current_keycode += 1;
-            if current_keycode >= 6 {
-                usb_hid.push_input(&rollover_error_report);
+        } else if *rotary2_counter > 0 {
+            if check_and_push_rollover(current_keycode + 1, &usb_hid) {
                 continue;
             }
+
+            keycodes[current_keycode] = KeyCode::LBracket as u8;
+            *rotary2_counter = 0;
         }
 
         if keycodes == last_keycodes {
@@ -248,6 +224,15 @@ fn main() -> ! {
 
         usb_hid.push_input(&report);
     }
+}
+
+fn check_and_push_rollover(keycode_count: usize, usb_hid: &HIDClass<'_, UsbBus<Peripheral>>) -> bool {
+    if keycode_count > MAX_KEYCODE_COUNT {
+        usb_hid.push_input(&ROLLOVER_ERROR_REPORT);
+        return true;
+    }
+
+    return false;
 }
 
 fn poll_usb() {
