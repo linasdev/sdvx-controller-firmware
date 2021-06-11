@@ -21,8 +21,11 @@ use crate::keycode::KeyCode;
 
 mod keycode;
 
+// The higher the sensitivity, the less keypresses will be sent to the computer
 static ROTARY_SENSITIVITY: i8 = 1;
+// Maximum amount of keycodes per frame (default: 6)
 static MAX_KEYCODE_COUNT: usize = 6;
+// HID report to send when the amount of keycodes exceeds MAX_KEYCODE_COUNT
 static ROLLOVER_ERROR_REPORT: KeyboardReport = KeyboardReport {
     modifier: 0x00,
     leds: 0x00,
@@ -120,8 +123,11 @@ fn main() -> ! {
     }
 
     unsafe {
+        // For usb polling
         NVIC::unmask(Interrupt::USB_HP_CAN_TX);
         NVIC::unmask(Interrupt::USB_LP_CAN_RX0);
+
+        // For rotary encoder clock interrupts
         NVIC::unmask(Interrupt::EXTI9_5);
     }
 
@@ -219,6 +225,7 @@ fn main() -> ! {
             keycodes,
         };
 
+        // Update the last_keycodes variable only if the hid report was sent successfully
         match usb_hid.push_input(&report) {
             Ok(_) => last_keycodes = keycodes,
             Err(_) => {},
@@ -240,6 +247,8 @@ fn poll_usb() {
     let usb_dev = unsafe { USB_DEV.as_mut().unwrap() };
 
     if usb_dev.poll(&mut [usb_hid]) {
+        // Read and discard incoming USB packets, so the interrupt flag gets cleared and
+        // the mcu doesn't get stuck.
         let mut data = [0u8, 64];
         usb_hid.pull_raw_output(&mut data);
     }
