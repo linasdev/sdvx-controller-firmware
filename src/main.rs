@@ -64,8 +64,6 @@ fn main() -> ! {
         .pclk2(72.mhz())
         .freeze(&mut flash.acr);
 
-    assert!(clocks.usbclk_valid());
-
     let mut afio = dp.AFIO.constrain(&mut rcc.apb2);
     let mut gpioa = dp.GPIOA.split(&mut rcc.apb2);
 
