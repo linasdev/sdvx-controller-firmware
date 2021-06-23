@@ -3,14 +3,18 @@
 
 use panic_reset as _;
 
+use cortex_m::asm::delay;
+use cortex_m::interrupt::free;
 use cortex_m_rt::entry;
-use embedded_hal::digital::v2::InputPin;
+use embedded_hal::digital::v2::{InputPin, OutputPin};
 use stm32f1xx_hal::gpio::gpioa::{PA10, PA7, PA8, PA9};
-use stm32f1xx_hal::gpio::{Edge, ExtiPin, Input, PullUp};
-use stm32f1xx_hal::pac::{Peripherals, NVIC};
+use stm32f1xx_hal::gpio::gpiob::{PB14, PB13, PB12};
+use stm32f1xx_hal::gpio::{Edge, ExtiPin, Input, PullUp, Output, PushPull};
+use stm32f1xx_hal::pac::{Peripherals, NVIC, TIM2};
 use stm32f1xx_hal::prelude::*;
 use stm32f1xx_hal::stm32::{interrupt, Interrupt};
 use stm32f1xx_hal::usb::{Peripheral, UsbBus, UsbBusType};
+use stm32f1xx_hal::timer::{CountDownTimer, Timer, Event};
 use usb_device::bus::UsbBusAllocator;
 use usb_device::prelude::*;
 use usbd_hid::descriptor::generator_prelude::*;
@@ -21,6 +25,8 @@ use crate::keycode::KeyCode;
 
 mod keycode;
 
+// Initial frequency for binary code modulation in Hertz
+static BCM_INITIAL_FREQUENCY_HZ: u32 = 65_536;
 // The higher the sensitivity, the less keypresses will be sent to the computer
 static ROTARY_SENSITIVITY: i8 = 1;
 // Maximum amount of keycodes per frame (default: 6)
@@ -51,6 +57,19 @@ static mut ROTARY2_CLOCK_INPUT: Option<PA9<Input<PullUp>>> = None;
 static mut ROTARY2_DATA_INPUT: Option<PA10<Input<PullUp>>> = None;
 static mut ROTARY2_COUNTER: i8 = 0;
 
+static mut SHIFT_DATA: Option<PB14<Output<PushPull>>> = None;
+static mut SHIFT_LATCH: Option<PB13<Output<PushPull>>> = None;
+static mut SHIFT_CLOCK: Option<PB12<Output<PushPull>>> = None;
+
+// Timer for binary code modulation
+static mut BCM_TIMER: Option<CountDownTimer<TIM2>> = None;
+// Current frequency for binary code modulation in Hertz
+static mut BCM_CURRENT_FREQUENCY_HZ: u32 = BCM_INITIAL_FREQUENCY_HZ;
+// Current bitmask for binary code modulation
+static mut BCM_CURRENT_BITMASK: u8 = 0x01;
+// LED brightness values for binary code modulation
+static mut BCM_LED_BRIGHTNESS: [u8; 8] = [0x00; 8];
+
 #[entry]
 fn main() -> ! {
     let dp = Peripherals::take().unwrap();
@@ -58,7 +77,7 @@ fn main() -> ! {
     let mut flash = dp.FLASH.constrain();
     let mut rcc = dp.RCC.constrain();
 
-    rcc.cfgr
+    let clocks = rcc.cfgr
         .use_hse(8.mhz())
         .sysclk(72.mhz())
         .hclk(72.mhz())
@@ -68,6 +87,7 @@ fn main() -> ! {
 
     let mut afio = dp.AFIO.constrain(&mut rcc.apb2);
     let mut gpioa = dp.GPIOA.split(&mut rcc.apb2);
+    let mut gpiob = dp.GPIOB.split(&mut rcc.apb2);
 
     let start_input = gpioa.pa0.into_pull_down_input(&mut gpioa.crl);
     let button1_input = gpioa.pa1.into_pull_down_input(&mut gpioa.crl);
@@ -96,12 +116,22 @@ fn main() -> ! {
         pin_dp: gpioa.pa12,
     };
 
+    let shift_clock = gpiob.pb12.into_push_pull_output(&mut gpiob.crh);
+    let shift_latch = gpiob.pb13.into_push_pull_output(&mut gpiob.crh);
+    let shift_data = gpiob.pb14.into_push_pull_output(&mut gpiob.crh);
+
     unsafe {
         USB_BUS = Some(UsbBus::new(usb));
+        
         ROTARY1_CLOCK_INPUT = Some(rotary1_clock_input);
         ROTARY1_DATA_INPUT = Some(rotary1_data_input);
+        
         ROTARY2_CLOCK_INPUT = Some(rotary2_clock_input);
         ROTARY2_DATA_INPUT = Some(rotary2_data_input);
+
+        SHIFT_DATA = Some(shift_data);
+        SHIFT_LATCH = Some(shift_latch);
+        SHIFT_CLOCK = Some(shift_clock);
     }
 
     let usb_bus = unsafe { USB_BUS.as_ref().unwrap() };
@@ -122,6 +152,13 @@ fn main() -> ! {
         USB_DEV = Some(usb_dev);
     }
 
+    let mut bcm_timer = Timer::tim2(dp.TIM2, &clocks, &mut rcc.apb1).start_count_down(BCM_INITIAL_FREQUENCY_HZ.hz());
+    bcm_timer.listen(Event::Update);
+
+    unsafe {
+        BCM_TIMER = Some(bcm_timer);
+    }
+
     unsafe {
         // For usb polling
         NVIC::unmask(Interrupt::USB_HP_CAN_TX);
@@ -129,6 +166,9 @@ fn main() -> ! {
 
         // For rotary encoder clock interrupts
         NVIC::unmask(Interrupt::EXTI9_5);
+
+        // For binary code modulation
+        NVIC::unmask(Interrupt::TIM2);
     }
 
     let usb_hid = unsafe { USB_HID.as_ref().unwrap() };
@@ -233,6 +273,13 @@ fn main() -> ! {
     }
 }
 
+fn modify_bcm_led_value(led_index: usize, led_value: u8) {
+    free(|_| {
+        let bcm_led_brightness = unsafe { &mut BCM_LED_BRIGHTNESS };
+        (*bcm_led_brightness)[led_index] = led_value;
+    });
+}
+
 fn check_and_push_rollover(
     keycode_count: usize,
     usb_hid: &HIDClass<'_, UsbBus<Peripheral>>,
@@ -300,4 +347,50 @@ fn USB_HP_CAN_TX() {
 #[interrupt]
 fn USB_LP_CAN_RX0() {
     poll_usb();
+}
+
+#[interrupt]
+fn TIM2() {
+    let shift_data = unsafe { SHIFT_DATA.as_mut().unwrap() };
+    let shift_latch = unsafe { SHIFT_LATCH.as_mut().unwrap() };
+    let shift_clock = unsafe { SHIFT_CLOCK.as_mut().unwrap() };
+
+    let bcm_timer = unsafe { BCM_TIMER.as_mut().unwrap() };
+    let bcm_current_frequency_hz = unsafe { &mut BCM_CURRENT_FREQUENCY_HZ };
+    let bcm_current_bitmask = unsafe { &mut BCM_CURRENT_BITMASK };
+
+    let bcm_led_brightness = unsafe { &BCM_LED_BRIGHTNESS };
+
+    shift_latch.set_low().unwrap();
+
+    for i in 0..bcm_led_brightness.len() {
+        let brightness = bcm_led_brightness[bcm_led_brightness.len() - i - 1];
+
+        if (brightness & (*bcm_current_bitmask)) != 0 {
+            shift_data.set_high().unwrap();
+        } else {
+            shift_data.set_low().unwrap();
+        }
+
+        delay(1);
+        shift_clock.set_high().unwrap();
+        delay(1);
+        shift_clock.set_low().unwrap();
+    }
+
+    shift_data.set_low().unwrap();
+    shift_latch.set_high().unwrap();
+
+    // Decrease the frequency by a factor of 2
+    *bcm_current_frequency_hz >>= 1;
+    // Move onto the next bit
+    *bcm_current_bitmask <<= 1;
+
+    if *bcm_current_bitmask == 0 {
+        *bcm_current_frequency_hz = BCM_INITIAL_FREQUENCY_HZ;
+        *bcm_current_bitmask = 0x01;
+    }
+
+    bcm_timer.start((*bcm_current_frequency_hz).hz());
+    bcm_timer.wait().unwrap();
 }
