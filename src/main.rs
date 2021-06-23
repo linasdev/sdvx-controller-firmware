@@ -307,6 +307,16 @@ fn poll_usb() {
 }
 
 #[interrupt]
+fn USB_HP_CAN_TX() {
+    poll_usb();
+}
+
+#[interrupt]
+fn USB_LP_CAN_RX0() {
+    poll_usb();
+}
+
+#[interrupt]
 fn EXTI9_5() {
     let rotary1_clock_input = unsafe { ROTARY1_CLOCK_INPUT.as_mut().unwrap() };
 
@@ -337,16 +347,6 @@ fn EXTI9_5() {
 
         rotary2_clock_input.clear_interrupt_pending_bit();
     }
-}
-
-#[interrupt]
-fn USB_HP_CAN_TX() {
-    poll_usb();
-}
-
-#[interrupt]
-fn USB_LP_CAN_RX0() {
-    poll_usb();
 }
 
 #[interrupt]
