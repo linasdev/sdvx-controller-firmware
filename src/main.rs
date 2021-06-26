@@ -70,7 +70,7 @@ static mut BCM_CURRENT_FREQUENCY_HZ: u32 = BCM_INITIAL_FREQUENCY_HZ;
 // Current bitmask for binary code modulation
 static mut BCM_CURRENT_BITMASK: u8 = 0x01;
 // LED brightness values for binary code modulation
-static mut BCM_LED_BRIGHTNESS: [u8; 8] = [0x00; 8];
+static mut BCM_LED_BRIGHTNESS: [u8; 24] = [0x00; 24];
 
 #[entry]
 fn main() -> ! {
@@ -379,8 +379,8 @@ fn TIM2() {
     for i in 0..bcm_led_brightness.len() / 8 {
         let mut value = 0x00;
 
-        for j in (i * 8)..=(i * 8 + 7) {
-            let brightness = bcm_led_brightness[bcm_led_brightness.len() - j - 1];
+        for j in 0..=7 {
+            let brightness = bcm_led_brightness[bcm_led_brightness.len() - (i * 8 + j) - 1];
 
             value <<= 1;
 
