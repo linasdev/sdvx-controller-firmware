@@ -1,6 +1,6 @@
 #[repr(u8)]
 #[allow(dead_code)]
-pub enum KeyCode {
+pub enum SdvxKeycode {
     No = 0x00,
     ErrorRollOver,
     PostFail,
