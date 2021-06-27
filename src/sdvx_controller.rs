@@ -1,6 +1,6 @@
-use embedded_hal::digital::v2::{InputPin};
+use embedded_hal::digital::v2::InputPin;
 use stm32f1xx_hal::gpio::gpioa::*;
-use stm32f1xx_hal::gpio::{Edge, ExtiPin, Input, PullUp, PullDown};
+use stm32f1xx_hal::gpio::{Edge, ExtiPin, Input, PullDown, PullUp};
 use stm32f1xx_hal::pac::{CorePeripherals, Peripherals, NVIC};
 use stm32f1xx_hal::prelude::*;
 use stm32f1xx_hal::stm32::{interrupt, Interrupt};
@@ -11,9 +11,9 @@ use usbd_hid::descriptor::generator_prelude::*;
 use usbd_hid::descriptor::KeyboardReport;
 use usbd_hid::hid_class::HIDClass;
 
+use crate::sdvx_bcm::SdvxBcm;
 use crate::sdvx_keycode::SdvxKeycode;
 use crate::sdvx_status::SdvxStatus;
-use crate::sdvx_bcm::SdvxBcm;
 
 // The higher the sensitivity, the less keypresses will be sent to the computer
 static ROTARY_SENSITIVITY: i8 = 1;
@@ -65,19 +65,20 @@ impl SdvxController {
     pub fn new(cp: CorePeripherals, dp: Peripherals) -> Self {
         let mut flash = dp.FLASH.constrain();
         let mut rcc = dp.RCC.constrain();
-    
-        let clocks = rcc.cfgr
+
+        let clocks = rcc
+            .cfgr
             .use_hse(8.mhz())
             .sysclk(72.mhz())
             .hclk(72.mhz())
             .pclk1(36.mhz())
             .pclk2(72.mhz())
             .freeze(&mut flash.acr);
-    
+
         let mut afio = dp.AFIO.constrain(&mut rcc.apb2);
         let mut gpioa = dp.GPIOA.split(&mut rcc.apb2);
         let mut gpiob = dp.GPIOB.split(&mut rcc.apb2);
-    
+
         let start_input = gpioa.pa0.into_pull_down_input(&mut gpioa.crl);
         let button1_input = gpioa.pa1.into_pull_down_input(&mut gpioa.crl);
         let button2_input = gpioa.pa2.into_pull_down_input(&mut gpioa.crl);
@@ -85,7 +86,6 @@ impl SdvxController {
         let button4_input = gpioa.pa4.into_pull_down_input(&mut gpioa.crl);
         let fx_l_input = gpioa.pa5.into_pull_down_input(&mut gpioa.crl);
         let fx_r_input = gpioa.pa6.into_pull_down_input(&mut gpioa.crl);
-
 
         let mut rotary1_clock_input = gpioa.pa7.into_pull_up_input(&mut gpioa.crl);
         let rotary1_data_input = gpioa.pa8.into_pull_up_input(&mut gpioa.crh);
@@ -101,15 +101,13 @@ impl SdvxController {
         rotary2_clock_input.enable_interrupt(&dp.EXTI);
         let rotary2_counter = unsafe { &mut ROTARY2_COUNTER };
 
-
         unsafe {
             ROTARY1_CLOCK_INPUT = Some(rotary1_clock_input);
             ROTARY1_DATA_INPUT = Some(rotary1_data_input);
-            
+
             ROTARY2_CLOCK_INPUT = Some(rotary2_clock_input);
             ROTARY2_DATA_INPUT = Some(rotary2_data_input);
         }
-
 
         let usb = Peripheral {
             usb: dp.USB,
@@ -117,9 +115,7 @@ impl SdvxController {
             pin_dp: gpioa.pa12,
         };
 
-        unsafe {
-            USB_BUS = Some(UsbBus::new(usb))
-        }
+        unsafe { USB_BUS = Some(UsbBus::new(usb)) }
 
         let usb_bus = unsafe { USB_BUS.as_ref().unwrap() };
         let usb_hid = HIDClass::new(usb_bus, KeyboardReport::desc(), 1);
@@ -133,7 +129,7 @@ impl SdvxController {
             .product("SDVX Controller")
             .max_power(500) // 500mA
             .build();
-    
+
         unsafe {
             USB_HID = Some(usb_hid);
             USB_DEV = Some(usb_dev);
@@ -141,10 +137,9 @@ impl SdvxController {
 
         let usb_hid = unsafe { USB_HID.as_ref().unwrap() };
 
-
         let bcm = SdvxBcm::new(
-            gpiob.pb13.into_alternate_push_pull(&mut gpiob.crh), 
-            gpiob.pb14.into_push_pull_output(&mut gpiob.crh),  
+            gpiob.pb13.into_alternate_push_pull(&mut gpiob.crh),
+            gpiob.pb14.into_push_pull_output(&mut gpiob.crh),
             gpiob.pb15.into_alternate_push_pull(&mut gpiob.crh),
             dp.SPI2,
             cp.SYST,
@@ -157,7 +152,7 @@ impl SdvxController {
             // For usb polling
             NVIC::unmask(Interrupt::USB_HP_CAN_TX);
             NVIC::unmask(Interrupt::USB_LP_CAN_RX0);
-    
+
             // For rotary encoder clock interrupts
             NVIC::unmask(Interrupt::EXTI9_5);
         }
@@ -175,7 +170,7 @@ impl SdvxController {
             usb_hid,
             status: SdvxStatus::new(),
             bcm,
-            last_keycodes: [SdvxKeycode::No as u8; 6]
+            last_keycodes: [SdvxKeycode::No as u8; 6],
         }
     }
 
@@ -271,7 +266,7 @@ impl SdvxController {
             Err(_) => {}
         }
     }
-    
+
     fn update_status(&mut self) {
         self.status.start_pressed = self.start_input.is_high().unwrap();
         self.status.button1_pressed = self.button1_input.is_high().unwrap();
@@ -296,7 +291,7 @@ impl SdvxController {
             let _ = self.usb_hid.push_input(&ROLLOVER_ERROR_REPORT);
             return true;
         }
-    
+
         return false;
     }
 }

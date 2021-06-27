@@ -8,11 +8,11 @@ use stm32f1xx_hal::pac::{CorePeripherals, Peripherals};
 
 use crate::sdvx_controller::SdvxController;
 
+mod sdvx_bcm;
 mod sdvx_controller;
 mod sdvx_keycode;
-mod sdvx_status;
-mod sdvx_bcm;
 mod sdvx_sin_table;
+mod sdvx_status;
 
 #[entry]
 fn main() -> ! {
