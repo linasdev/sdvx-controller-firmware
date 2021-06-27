@@ -2,12 +2,15 @@ use cortex_m::interrupt::free;
 use embedded_hal::digital::v2::OutputPin;
 use stm32f1xx_hal::gpio::gpiob::{PB13, PB14, PB15};
 use stm32f1xx_hal::gpio::{Output, PushPull, Alternate};
-use stm32f1xx_hal::pac::{NVIC, TIM2, SPI2};
+use stm32f1xx_hal::pac::{NVIC, TIM2, SPI2, SYST};
 use stm32f1xx_hal::prelude::*;
 use stm32f1xx_hal::stm32::{interrupt, Interrupt};
 use stm32f1xx_hal::timer::{CountDownTimer, Timer, Event};
 use stm32f1xx_hal::spi::{Spi, NoMiso, Mode, Polarity, Phase, Spi2NoRemap};
 use stm32f1xx_hal::rcc::{Clocks, APB1};
+
+use crate::sdvx_status::SdvxStatus;
+use crate::sdvx_sin_table::SDVX_SIN_TABLE;
 
 // Initial frequency for binary code modulation in Hertz
 static BCM_INITIAL_FREQUENCY_HZ: u32 = 65_536;
@@ -27,11 +30,11 @@ static mut SHIFT_LATCH: Option<PB14<Output<PushPull>>> = None;
 static mut SHIFT_SPI: Option<Spi<SPI2, Spi2NoRemap, (PB13<Alternate<PushPull>>, NoMiso, PB15<Alternate<PushPull>>), u8>> = None;
 
 pub struct SdvxBcm {
-    led_brightness: &'static mut [u8; BCM_LED_COUNT]
+    led_brightness: &'static mut [u8; BCM_LED_COUNT],
 }
 
 impl SdvxBcm {
-    pub fn new(shift_clock: PB13<Alternate<PushPull>>, shift_latch: PB14<Output<PushPull>>, shift_data: PB15<Alternate<PushPull>>, spi2: SPI2, clocks: Clocks, apb1: &mut APB1, tim2: TIM2) -> Self {
+    pub fn new(shift_clock: PB13<Alternate<PushPull>>, shift_latch: PB14<Output<PushPull>>, shift_data: PB15<Alternate<PushPull>>, spi2: SPI2, mut syst: SYST, clocks: Clocks, apb1: &mut APB1, tim2: TIM2) -> Self {
         let shift_spi = {
             let pins = (
                 shift_clock,
@@ -57,6 +60,10 @@ impl SdvxBcm {
         let mut bcm_timer = Timer::tim2(tim2, &clocks, apb1).start_count_down(BCM_INITIAL_FREQUENCY_HZ.hz());
         bcm_timer.listen(Event::Update);
 
+        syst.set_reload(0xff);
+        syst.clear_current();
+        syst.enable_counter();
+
         unsafe {
             BCM_TIMER = Some(bcm_timer);
 
@@ -69,9 +76,59 @@ impl SdvxBcm {
         }
     }
 
-    pub fn tick(&mut self) {
-        for i in 0..BCM_LED_COUNT {
-            self.modify_led_value(i, 0xff);
+    pub fn tick(&mut self, status: &SdvxStatus) {
+        let sin_value = SDVX_SIN_TABLE[SYST::get_current() as usize % 255];
+
+        if status.button1_pressed {
+            self.modify_led_value_rgb(0, sin_value, sin_value, 0);
+        }
+        
+        if status.button2_pressed {
+            self.modify_led_value_rgb(1, 0, sin_value, sin_value);
+        }
+        
+        if status.button3_pressed {
+            self.modify_led_value_rgb(2, 0, sin_value, sin_value);
+        }
+
+        if status.button4_pressed {
+            self.modify_led_value_rgb(3, sin_value, sin_value, 0);
+        }
+
+        if status.fx_l_pressed {
+            self.modify_led_value_rgb(4, sin_value, sin_value, 0);
+        }
+
+        if status.fx_r_pressed {
+            self.modify_led_value_rgb(5, sin_value, sin_value, 0);
+        }
+
+
+        if status.rotary1_rotated_ccw {
+            self.modify_led_value_rgb(0, sin_value, sin_value, 0);
+            self.modify_led_value_rgb(4, sin_value, 0, sin_value);
+        }
+
+        if status.rotary1_rotated_ccw {
+            self.modify_led_value_rgb(0, sin_value, 0, sin_value);
+            self.modify_led_value_rgb(4, sin_value, sin_value, 0);
+        }
+
+
+        if status.rotary2_rotated_ccw {
+            self.modify_led_value_rgb(3, sin_value, sin_value, 0);
+            self.modify_led_value_rgb(5, sin_value, 0, sin_value);
+        }
+
+        if status.rotary2_rotated_ccw {
+            self.modify_led_value_rgb(3, sin_value, 0, sin_value);
+            self.modify_led_value_rgb(5, sin_value, sin_value, 0);
+        }
+
+
+        if status.start_pressed {
+            self.modify_led_value_rgb(1, sin_value, 0, sin_value);
+            self.modify_led_value_rgb(2, sin_value, 0, sin_value);
         }
     }
 
@@ -79,6 +136,12 @@ impl SdvxBcm {
         free(|_| {
             (*self.led_brightness)[led_index] = led_value;
         });
+    }
+
+    fn modify_led_value_rgb(&mut self, index: usize, red_value: u8, green_value: u8, blue_value: u8) {
+        self.modify_led_value(index * 3 + 0, red_value);
+        self.modify_led_value(index * 3 + 1, green_value);
+        self.modify_led_value(index * 3 + 2, blue_value);
     }
 }
 

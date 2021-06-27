@@ -1,7 +1,7 @@
 use embedded_hal::digital::v2::{InputPin};
 use stm32f1xx_hal::gpio::gpioa::*;
 use stm32f1xx_hal::gpio::{Edge, ExtiPin, Input, PullUp, PullDown};
-use stm32f1xx_hal::pac::{Peripherals, NVIC};
+use stm32f1xx_hal::pac::{CorePeripherals, Peripherals, NVIC};
 use stm32f1xx_hal::prelude::*;
 use stm32f1xx_hal::stm32::{interrupt, Interrupt};
 use stm32f1xx_hal::usb::{Peripheral, UsbBus, UsbBusType};
@@ -62,7 +62,7 @@ pub struct SdvxController {
 }
 
 impl SdvxController {
-    pub fn new(dp: Peripherals) -> Self {
+    pub fn new(cp: CorePeripherals, dp: Peripherals) -> Self {
         let mut flash = dp.FLASH.constrain();
         let mut rcc = dp.RCC.constrain();
     
@@ -147,6 +147,7 @@ impl SdvxController {
             gpiob.pb14.into_push_pull_output(&mut gpiob.crh),  
             gpiob.pb15.into_alternate_push_pull(&mut gpiob.crh),
             dp.SPI2,
+            cp.SYST,
             clocks,
             &mut rcc.apb1,
             dp.TIM2,
@@ -180,7 +181,7 @@ impl SdvxController {
 
     pub fn tick(&mut self) {
         self.update_status();
-        self.bcm.tick();
+        self.bcm.tick(&self.status);
 
         let mut keycodes = [SdvxKeycode::No as u8; 6];
         let mut current_keycode = 0;
