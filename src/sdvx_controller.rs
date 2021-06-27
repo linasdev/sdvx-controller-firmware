@@ -12,6 +12,7 @@ use usbd_hid::descriptor::KeyboardReport;
 use usbd_hid::hid_class::HIDClass;
 
 use crate::sdvx_keycode::SdvxKeycode;
+use crate::sdvx_status::SdvxStatus;
 use crate::sdvx_bcm::SdvxBcm;
 
 // The higher the sensitivity, the less keypresses will be sent to the computer
@@ -55,6 +56,7 @@ pub struct SdvxController {
     rotary1_counter: &'static mut i8,
     rotary2_counter: &'static mut i8,
     usb_hid: &'static HIDClass<'static, UsbBusType>,
+    status: SdvxStatus,
     bcm: SdvxBcm,
     last_keycodes: [u8; 6],
 }
@@ -170,48 +172,50 @@ impl SdvxController {
             rotary1_counter,
             rotary2_counter,
             usb_hid,
+            status: SdvxStatus::new(),
             bcm,
             last_keycodes: [SdvxKeycode::No as u8; 6]
         }
     }
 
     pub fn tick(&mut self) {
+        self.update_status();
         self.bcm.tick();
 
         let mut keycodes = [SdvxKeycode::No as u8; 6];
         let mut current_keycode = 0;
 
-        if self.start_input.is_high().unwrap() {
+        if self.status.start_pressed {
             keycodes[current_keycode] = SdvxKeycode::Kb1 as u8;
             current_keycode += 1;
         }
 
-        if self.button1_input.is_high().unwrap() {
+        if self.status.button1_pressed {
             keycodes[current_keycode] = SdvxKeycode::E as u8;
             current_keycode += 1;
         }
 
-        if self.button2_input.is_high().unwrap() {
+        if self.status.button2_pressed {
             keycodes[current_keycode] = SdvxKeycode::R as u8;
             current_keycode += 1;
         }
 
-        if self.button3_input.is_high().unwrap() {
+        if self.status.button3_pressed {
             keycodes[current_keycode] = SdvxKeycode::I as u8;
             current_keycode += 1;
         }
 
-        if self.button4_input.is_high().unwrap() {
+        if self.status.button4_pressed {
             keycodes[current_keycode] = SdvxKeycode::O as u8;
             current_keycode += 1;
         }
 
-        if self.fx_l_input.is_high().unwrap() {
+        if self.status.fx_l_pressed {
             keycodes[current_keycode] = SdvxKeycode::C as u8;
             current_keycode += 1;
         }
 
-        if self.fx_r_input.is_high().unwrap() {
+        if self.status.fx_r_pressed {
             if self.check_and_push_rollover(current_keycode + 1) {
                 return;
             }
@@ -220,38 +224,34 @@ impl SdvxController {
             current_keycode += 1;
         }
 
-        if *self.rotary1_counter <= -ROTARY_SENSITIVITY {
+        if self.status.rotary1_rotated_ccw {
             if self.check_and_push_rollover(current_keycode + 1) {
                 return;
             }
 
             keycodes[current_keycode] = SdvxKeycode::Q as u8;
             current_keycode += 1;
-            *self.rotary1_counter = 0;
-        } else if *self.rotary1_counter >= ROTARY_SENSITIVITY {
+        } else if self.status.rotary1_rotated_cw {
             if self.check_and_push_rollover(current_keycode + 1) {
                 return;
             }
 
             keycodes[current_keycode] = SdvxKeycode::W as u8;
             current_keycode += 1;
-            *self.rotary1_counter = 0;
         }
 
-        if *self.rotary2_counter <= -ROTARY_SENSITIVITY {
+        if self.status.rotary2_rotated_ccw {
             if self.check_and_push_rollover(current_keycode + 1) {
                 return;
             }
 
             keycodes[current_keycode] = SdvxKeycode::P as u8;
-            *self.rotary2_counter = 0;
-        } else if *self.rotary2_counter >= ROTARY_SENSITIVITY {
+        } else if self.status.rotary1_rotated_cw {
             if self.check_and_push_rollover(current_keycode + 1) {
                 return;
             }
 
             keycodes[current_keycode] = SdvxKeycode::LBracket as u8;
-            *self.rotary2_counter = 0;
         }
 
         if keycodes == self.last_keycodes {
@@ -271,6 +271,23 @@ impl SdvxController {
         }
     }
     
+    fn update_status(&mut self) {
+        self.status.start_pressed = self.start_input.is_high().unwrap();
+        self.status.button1_pressed = self.button1_input.is_high().unwrap();
+        self.status.button2_pressed = self.button2_input.is_high().unwrap();
+        self.status.button3_pressed = self.button3_input.is_high().unwrap();
+        self.status.button4_pressed = self.button4_input.is_high().unwrap();
+        self.status.fx_l_pressed = self.fx_l_input.is_high().unwrap();
+        self.status.fx_r_pressed = self.fx_r_input.is_high().unwrap();
+        self.status.rotary1_rotated_ccw = *self.rotary1_counter <= -ROTARY_SENSITIVITY;
+        self.status.rotary1_rotated_cw = *self.rotary1_counter >= ROTARY_SENSITIVITY;
+        self.status.rotary2_rotated_ccw = *self.rotary2_counter <= -ROTARY_SENSITIVITY;
+        self.status.rotary2_rotated_cw = *self.rotary2_counter >= ROTARY_SENSITIVITY;
+
+        *self.rotary1_counter = 0;
+        *self.rotary2_counter = 0;
+    }
+
     fn check_and_push_rollover(&self, keycode_count: usize) -> bool {
         if keycode_count > MAX_KEYCODE_COUNT {
             // Ignore errors as the transmission will likely be attempted again

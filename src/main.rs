@@ -10,6 +10,7 @@ use crate::sdvx_controller::SdvxController;
 
 mod sdvx_controller;
 mod sdvx_keycode;
+mod sdvx_status;
 mod sdvx_bcm;
 
 #[entry]
