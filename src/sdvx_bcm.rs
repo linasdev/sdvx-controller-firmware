@@ -18,6 +18,8 @@ static BCM_INITIAL_FREQUENCY_HZ: u32 = 65_536;
 static BCM_SPI_FREQUENCY_HZ: u32 = 8000_000;
 // Total amount of led outputs (must be a multiple of 8)
 const BCM_LED_COUNT: usize = 24;
+// This multiplied by 255 is used for the systick timer reload value. The higher the value, the slower the animation. Must be in the range 0 - 65793
+const BCM_ANIMATION_SPEED: u32 = 32_768;
 // Timer for binary code modulation
 static mut BCM_TIMER: Option<CountDownTimer<TIM2>> = None;
 // Current frequency for binary code modulation in Hertz
@@ -75,7 +77,7 @@ impl SdvxBcm {
             Timer::tim2(tim2, &clocks, apb1).start_count_down(BCM_INITIAL_FREQUENCY_HZ.hz());
         bcm_timer.listen(Event::Update);
 
-        syst.set_reload(0xff);
+        syst.set_reload(BCM_ANIMATION_SPEED * 255);
         syst.clear_current();
         syst.enable_counter();
 
@@ -90,55 +92,57 @@ impl SdvxBcm {
     }
 
     pub fn tick(&mut self, status: &SdvxStatus) {
-        let sin_value = SDVX_SIN_TABLE[SYST::get_current() as usize % 255];
+        let sin_value = SDVX_SIN_TABLE[SYST::get_current() as usize / BCM_ANIMATION_SPEED as usize];
+
+        self.clear_led_values();
 
         if status.button1_pressed {
-            self.modify_led_value_rgb(0, sin_value, sin_value, 0);
+            self.modify_led_value_rgb(0, sin_value, 0xff - sin_value, 0);
         }
 
         if status.button2_pressed {
-            self.modify_led_value_rgb(1, 0, sin_value, sin_value);
+            self.modify_led_value_rgb(1, 0, sin_value, 0xff - sin_value);
         }
 
         if status.button3_pressed {
-            self.modify_led_value_rgb(2, 0, sin_value, sin_value);
+            self.modify_led_value_rgb(2, 0, sin_value, 0xff - sin_value);
         }
 
         if status.button4_pressed {
-            self.modify_led_value_rgb(3, sin_value, sin_value, 0);
+            self.modify_led_value_rgb(3, sin_value, 0xff - sin_value, 0);
         }
 
         if status.fx_l_pressed {
-            self.modify_led_value_rgb(4, sin_value, sin_value, 0);
+            self.modify_led_value_rgb(4, sin_value, 0xff - sin_value, 0);
         }
 
         if status.fx_r_pressed {
-            self.modify_led_value_rgb(5, sin_value, sin_value, 0);
+            self.modify_led_value_rgb(5, sin_value, 0xff - sin_value, 0);
         }
 
         if status.rotary1_rotated_ccw {
-            self.modify_led_value_rgb(0, sin_value, sin_value, 0);
-            self.modify_led_value_rgb(4, sin_value, 0, sin_value);
+            self.modify_led_value_rgb(0, sin_value, 0xff - sin_value, 0);
+            self.modify_led_value_rgb(4, sin_value, 0, 0xff - sin_value);
         }
 
         if status.rotary1_rotated_ccw {
-            self.modify_led_value_rgb(0, sin_value, 0, sin_value);
-            self.modify_led_value_rgb(4, sin_value, sin_value, 0);
+            self.modify_led_value_rgb(0, sin_value, 0, 0xff - sin_value);
+            self.modify_led_value_rgb(4, sin_value, 0xff - sin_value, 0);
         }
 
         if status.rotary2_rotated_ccw {
-            self.modify_led_value_rgb(3, sin_value, sin_value, 0);
-            self.modify_led_value_rgb(5, sin_value, 0, sin_value);
+            self.modify_led_value_rgb(3, sin_value, 0xff - sin_value, 0);
+            self.modify_led_value_rgb(5, sin_value, 0, 0xff - sin_value);
         }
 
         if status.rotary2_rotated_ccw {
-            self.modify_led_value_rgb(3, sin_value, 0, sin_value);
-            self.modify_led_value_rgb(5, sin_value, sin_value, 0);
+            self.modify_led_value_rgb(3, sin_value, 0, 0xff - sin_value);
+            self.modify_led_value_rgb(5, sin_value, 0xff - sin_value, 0);
         }
 
         if status.start_pressed {
-            self.modify_led_value_rgb(1, sin_value, 0, sin_value);
-            self.modify_led_value_rgb(2, sin_value, 0, sin_value);
+            self.modify_led_value_rgb(1, sin_value, 0, 0xff - sin_value);
+            self.modify_led_value_rgb(2, sin_value, 0, 0xff - sin_value);
         }
     }
 
@@ -158,6 +162,12 @@ impl SdvxBcm {
         self.modify_led_value(index * 3 + 0, red_value);
         self.modify_led_value(index * 3 + 1, green_value);
         self.modify_led_value(index * 3 + 2, blue_value);
+    }
+
+    fn clear_led_values(&mut self) {
+        for i in 0..BCM_LED_COUNT {
+            self.modify_led_value(i, 0);
+        }
     }
 }
 
