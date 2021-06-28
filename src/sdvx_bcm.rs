@@ -172,6 +172,16 @@ fn TIM2() {
 
     let bcm_led_brightness = unsafe { &BCM_LED_BRIGHTNESS };
 
+    // Decrease the frequency by a factor of 2
+    *bcm_current_frequency_hz >>= 1;
+    // Move onto the next bit
+    *bcm_current_bitmask <<= 1;
+
+    if *bcm_current_bitmask == 0 {
+        *bcm_current_frequency_hz = BCM_INITIAL_FREQUENCY_HZ;
+        *bcm_current_bitmask = 0x01;
+    }
+
     shift_latch.set_low().unwrap();
 
     for i in 0..bcm_led_brightness.len() / 8 {
@@ -183,7 +193,7 @@ fn TIM2() {
             value <<= 1;
 
             if (brightness & (*bcm_current_bitmask)) != 0 {
-                value |= 0x01;
+                value |= 1;
             }
         }
 
@@ -192,16 +202,6 @@ fn TIM2() {
     }
 
     shift_latch.set_high().unwrap();
-
-    // Decrease the frequency by a factor of 2
-    *bcm_current_frequency_hz >>= 1;
-    // Move onto the next bit
-    *bcm_current_bitmask <<= 1;
-
-    if *bcm_current_bitmask == 0 {
-        *bcm_current_frequency_hz = BCM_INITIAL_FREQUENCY_HZ;
-        *bcm_current_bitmask = 0x01;
-    }
 
     bcm_timer.start((*bcm_current_frequency_hz).hz());
     bcm_timer.wait().unwrap();
