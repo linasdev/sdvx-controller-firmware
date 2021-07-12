@@ -12,6 +12,7 @@ panic-reset = "0.1.0"
 embedded-hal = "0.2.5"
 usb-device = "0.2.8"
 usbd-hid = "0.5.0"
+rotary-encoder-hal = "0.3.0"
 
 [dependencies.stm32f1xx-hal]
 version = "0.7.0"

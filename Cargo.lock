@@ -107,6 +107,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "either"
+version = "1.6.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e78d4f1cc4ae33bbfc157ed5d5a5ef3bc29227303d595861deb238fcec4e9457"
+
+[[package]]
 name = "embedded-dma"
 version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -217,6 +223,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e2a38df5b15c8d5c7e8654189744d8e396bddc18ad48041a500ce52d6948941f"
 
 [[package]]
+name = "rotary-encoder-hal"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "30ea00b55c08c8c0d621d36739e0c74676ebd57324098bf32285a049da37d363"
+dependencies = [
+ "either",
+ "embedded-hal",
+]
+
+[[package]]
 name = "rustc_version"
 version = "0.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -243,6 +259,7 @@ dependencies = [
  "cortex-m-semihosting",
  "embedded-hal",
  "panic-reset",
+ "rotary-encoder-hal",
  "stm32f1xx-hal",
  "usb-device",
  "usbd-hid",
