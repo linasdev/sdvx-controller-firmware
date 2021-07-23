@@ -166,22 +166,22 @@ impl SdvxController {
         }
 
         if self.status.button1_pressed {
-            keycodes[current_keycode] = SdvxKeycode::E as u8;
+            keycodes[current_keycode] = SdvxKeycode::D as u8;
             current_keycode += 1;
         }
 
         if self.status.button2_pressed {
-            keycodes[current_keycode] = SdvxKeycode::R as u8;
+            keycodes[current_keycode] = SdvxKeycode::F as u8;
             current_keycode += 1;
         }
 
         if self.status.button3_pressed {
-            keycodes[current_keycode] = SdvxKeycode::I as u8;
+            keycodes[current_keycode] = SdvxKeycode::J as u8;
             current_keycode += 1;
         }
 
         if self.status.button4_pressed {
-            keycodes[current_keycode] = SdvxKeycode::O as u8;
+            keycodes[current_keycode] = SdvxKeycode::K as u8;
             current_keycode += 1;
         }
 
@@ -195,7 +195,7 @@ impl SdvxController {
                 return;
             }
 
-            keycodes[current_keycode] = SdvxKeycode::Comma as u8;
+            keycodes[current_keycode] = SdvxKeycode::M as u8;
             current_keycode += 1;
         }
 
@@ -204,14 +204,14 @@ impl SdvxController {
                 return;
             }
 
-            keycodes[current_keycode] = SdvxKeycode::Q as u8;
+            keycodes[current_keycode] = SdvxKeycode::W as u8;
             current_keycode += 1;
         } else if self.status.rotary1_rotated_cw {
             if self.check_and_push_rollover(current_keycode + 1) {
                 return;
             }
 
-            keycodes[current_keycode] = SdvxKeycode::W as u8;
+            keycodes[current_keycode] = SdvxKeycode::E as u8;
             current_keycode += 1;
         }
 
@@ -220,13 +220,13 @@ impl SdvxController {
                 return;
             }
 
-            keycodes[current_keycode] = SdvxKeycode::P as u8;
+            keycodes[current_keycode] = SdvxKeycode::O as u8;
         } else if self.status.rotary2_rotated_cw {
             if self.check_and_push_rollover(current_keycode + 1) {
                 return;
             }
 
-            keycodes[current_keycode] = SdvxKeycode::LBracket as u8;
+            keycodes[current_keycode] = SdvxKeycode::P as u8;
         }
 
         if keycodes == self.last_keycodes {
