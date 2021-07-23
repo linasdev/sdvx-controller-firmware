@@ -70,7 +70,6 @@ impl SdvxController {
             .pclk2(72.mhz())
             .freeze(&mut flash.acr);
 
-        let mut afio = dp.AFIO.constrain(&mut rcc.apb2);
         let mut gpioa = dp.GPIOA.split(&mut rcc.apb2);
         let mut gpiob = dp.GPIOB.split(&mut rcc.apb2);
 
