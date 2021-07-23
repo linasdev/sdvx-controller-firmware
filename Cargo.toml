@@ -3,6 +3,10 @@ name = "sdvx-controller-firmware"
 version = "1.0.0"
 authors = ["Linas Nikiperavičius <linas@linasdev.com>"]
 edition = "2018"
+license-file = "LICENSE.md"
+description = "Firmware for an open-source Sound Voltex controller"
+repository = "https://github.com/linasdev/sdvx-controller-firmware"
+readme = "README.md"
 
 [dependencies]
 cortex-m = "0.7.2"
