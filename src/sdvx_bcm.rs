@@ -15,11 +15,13 @@ use crate::sdvx_status::SdvxStatus;
 // Initial frequency for binary code modulation in Hertz
 static BCM_INITIAL_FREQUENCY_HZ: u32 = 65_536;
 // Frequency for data transfer to the shift registers
-static BCM_SPI_FREQUENCY_HZ: u32 = 8000_000;
+static BCM_SPI_FREQUENCY_HZ: u32 = 8_000_000;
 // Total amount of led outputs (must be a multiple of 8)
 const BCM_LED_COUNT: usize = 24;
+const BCM_LED_BRIGHTNESS_MULTIPLIER: f32 = 1.0;
 // This multiplied by 255 is used for the systick timer reload value. The higher the value, the slower the animation. Must be in the range 0 - 65793
-const BCM_ANIMATION_SPEED: u32 = 32_768;
+const BCM_ANIMATION_SPEED: u32 = 800_000;
+const BCM_ANIMATION_TIME_TICKS: u32 = 50_000_000;
 // Timer for binary code modulation
 static mut BCM_TIMER: Option<CountDownTimer<TIM2>> = None;
 // Current frequency for binary code modulation in Hertz
@@ -35,6 +37,17 @@ static mut SHIFT_SPI: Option<
 
 pub struct SdvxBcm {
     led_brightness: &'static mut [u8; BCM_LED_COUNT],
+    start_tick: u32,
+    button1_tick: u32,
+    button2_tick: u32,
+    button3_tick: u32,
+    button4_tick: u32,
+    fx_l_tick: u32,
+    fx_r_tick: u32,
+    rotary1_tick_ccw: u32,
+    rotary1_tick_cw: u32,
+    rotary2_tick_ccw: u32,
+    rotary2_tick_cw: u32,
 }
 
 impl SdvxBcm {
@@ -77,10 +90,6 @@ impl SdvxBcm {
             Timer::tim2(tim2, &clocks, apb1).start_count_down(BCM_INITIAL_FREQUENCY_HZ.hz());
         bcm_timer.listen(Event::Update);
 
-        syst.set_reload(BCM_ANIMATION_SPEED * 255);
-        syst.clear_current();
-        syst.enable_counter();
-
         unsafe {
             BCM_TIMER = Some(bcm_timer);
 
@@ -88,67 +97,128 @@ impl SdvxBcm {
             NVIC::unmask(Interrupt::TIM2);
         }
 
-        SdvxBcm { led_brightness }
+        SdvxBcm { 
+            led_brightness,
+            start_tick: 0,
+            button1_tick: 0,
+            button2_tick: 0,
+            button3_tick: 0,
+            button4_tick: 0,
+            fx_l_tick: 0,
+            fx_r_tick: 0,
+            rotary1_tick_ccw: 0,
+            rotary1_tick_cw: 0,
+            rotary2_tick_ccw: 0,
+            rotary2_tick_cw: 0,
+        }
     }
 
-    pub fn tick(&mut self, status: &SdvxStatus) {
-        let sin_value = SDVX_SIN_TABLE[SYST::get_current() as usize / BCM_ANIMATION_SPEED as usize];
+    pub fn tick(&mut self, status: &SdvxStatus, current_tick: u32) {
+        let sin_value = SDVX_SIN_TABLE[(current_tick / BCM_ANIMATION_SPEED) as usize % 256];
 
         self.clear_led_values();
 
-        if status.button1_pressed {
+        if status.button1_pressed || self.button1_tick + BCM_ANIMATION_TIME_TICKS > current_tick {
             self.modify_led_value_rgb(0, sin_value, 0xff - sin_value, 0);
+
+            if status.button1_pressed {
+                self.button1_tick = current_tick;
+            }
         }
 
-        if status.button2_pressed {
+        if status.button2_pressed || self.button2_tick + BCM_ANIMATION_TIME_TICKS > current_tick {
             self.modify_led_value_rgb(1, 0, sin_value, 0xff - sin_value);
+
+            if status.button2_pressed {
+                self.button2_tick = current_tick;
+            }
         }
 
-        if status.button3_pressed {
+        if status.button3_pressed || self.button3_tick + BCM_ANIMATION_TIME_TICKS > current_tick {
             self.modify_led_value_rgb(2, 0, sin_value, 0xff - sin_value);
+
+            if status.button3_pressed {
+                self.button3_tick = current_tick;
+            }
         }
 
-        if status.button4_pressed {
+        if status.button4_pressed || self.button4_tick + BCM_ANIMATION_TIME_TICKS > current_tick {
             self.modify_led_value_rgb(3, sin_value, 0xff - sin_value, 0);
+
+            if status.button4_pressed {
+                self.button4_tick = current_tick;
+            }
         }
 
-        if status.fx_l_pressed {
+        if status.fx_l_pressed || self.fx_l_tick + BCM_ANIMATION_TIME_TICKS > current_tick {
             self.modify_led_value_rgb(4, sin_value, 0xff - sin_value, 0);
+
+            if status.fx_l_pressed {
+                self.fx_l_tick = current_tick;
+            }
         }
 
-        if status.fx_r_pressed {
+        if status.fx_r_pressed || self.fx_r_tick + BCM_ANIMATION_TIME_TICKS > current_tick {
             self.modify_led_value_rgb(5, sin_value, 0xff - sin_value, 0);
+
+            if status.fx_r_pressed {
+                self.fx_r_tick = current_tick;
+            }
         }
 
-        if status.rotary1_rotated_ccw {
+        if status.rotary2_rotated_ccw || self.rotary2_tick_ccw + BCM_ANIMATION_TIME_TICKS > current_tick  {
             self.modify_led_value_rgb(0, sin_value, 0xff - sin_value, 0);
             self.modify_led_value_rgb(4, sin_value, 0, 0xff - sin_value);
+
+            if status.rotary2_rotated_ccw {
+                self.rotary2_tick_ccw = current_tick;
+                self.rotary2_tick_cw = 0;
+            }
         }
 
-        if status.rotary1_rotated_ccw {
+        if status.rotary1_rotated_cw || self.rotary1_tick_cw + BCM_ANIMATION_TIME_TICKS > current_tick  {
             self.modify_led_value_rgb(0, sin_value, 0, 0xff - sin_value);
             self.modify_led_value_rgb(4, sin_value, 0xff - sin_value, 0);
+
+            if status.rotary1_rotated_cw {
+                self.rotary1_tick_ccw = 0;
+                self.rotary1_tick_cw = current_tick;
+            }
         }
 
-        if status.rotary2_rotated_ccw {
+        if status.rotary2_rotated_ccw || self.rotary2_tick_ccw + BCM_ANIMATION_TIME_TICKS > current_tick  {
             self.modify_led_value_rgb(3, sin_value, 0xff - sin_value, 0);
             self.modify_led_value_rgb(5, sin_value, 0, 0xff - sin_value);
+
+            if status.rotary2_rotated_ccw {
+                self.rotary2_tick_ccw = current_tick;
+                self.rotary2_tick_cw = 0;
+            }
         }
 
-        if status.rotary2_rotated_ccw {
+        if status.rotary2_rotated_cw || self.rotary2_tick_cw + BCM_ANIMATION_TIME_TICKS > current_tick  {
             self.modify_led_value_rgb(3, sin_value, 0, 0xff - sin_value);
             self.modify_led_value_rgb(5, sin_value, 0xff - sin_value, 0);
+
+            if status.rotary2_rotated_cw {
+                self.rotary2_tick_ccw = 0;
+                self.rotary2_tick_cw = current_tick;
+            }
         }
 
-        if status.start_pressed {
+        if status.start_pressed || self.start_tick + BCM_ANIMATION_TIME_TICKS > current_tick  {
             self.modify_led_value_rgb(1, sin_value, 0, 0xff - sin_value);
             self.modify_led_value_rgb(2, sin_value, 0, 0xff - sin_value);
+
+            if status.start_pressed {
+                self.start_tick = current_tick;
+            }
         }
     }
 
     fn modify_led_value(&mut self, led_index: usize, led_value: u8) {
         free(|_| {
-            (*self.led_brightness)[led_index] = led_value;
+            (*self.led_brightness)[led_index] = (led_value as f32 * BCM_LED_BRIGHTNESS_MULTIPLIER) as u8;
         });
     }
 
@@ -159,15 +229,19 @@ impl SdvxBcm {
         green_value: u8,
         blue_value: u8,
     ) {
-        self.modify_led_value(index * 3 + 0, red_value);
-        self.modify_led_value(index * 3 + 1, green_value);
-        self.modify_led_value(index * 3 + 2, blue_value);
+        free(|_| {
+            self.modify_led_value(index * 3 + 0, red_value);
+            self.modify_led_value(index * 3 + 1, green_value);
+            self.modify_led_value(index * 3 + 2, blue_value);
+        });
     }
 
     fn clear_led_values(&mut self) {
-        for i in 0..BCM_LED_COUNT {
-            self.modify_led_value(i, 0);
-        }
+        free(|_| {
+            for i in 0..BCM_LED_COUNT {
+                self.modify_led_value(i, 0x00);
+            }
+        });
     }
 }
 
@@ -192,8 +266,6 @@ fn TIM2() {
         *bcm_current_bitmask = 0x01;
     }
 
-    shift_latch.set_low().unwrap();
-
     for i in 0..bcm_led_brightness.len() / 8 {
         let mut value = 0x00;
 
@@ -208,10 +280,10 @@ fn TIM2() {
         }
 
         let buffer = [value; 1];
+        shift_latch.set_low().unwrap();
         shift_spi.write(&buffer).unwrap();
+        shift_latch.set_high().unwrap();
     }
-
-    shift_latch.set_high().unwrap();
 
     bcm_timer.start((*bcm_current_frequency_hz).hz());
     bcm_timer.wait().unwrap();

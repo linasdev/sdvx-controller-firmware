@@ -5,6 +5,7 @@ use stm32f1xx_hal::pac::{CorePeripherals, Peripherals, NVIC};
 use stm32f1xx_hal::prelude::*;
 use stm32f1xx_hal::stm32::{interrupt, Interrupt};
 use stm32f1xx_hal::usb::{Peripheral, UsbBus, UsbBusType};
+use stm32f1xx_hal::time::{MonoTimer, Instant};
 use usb_device::bus::UsbBusAllocator;
 use usb_device::prelude::*;
 use usbd_hid::descriptor::generator_prelude::*;
@@ -54,6 +55,7 @@ pub struct SdvxController {
     status: SdvxStatus,
     bcm: SdvxBcm,
     last_keycodes: [u8; 6],
+    timer_start: Instant
 }
 
 impl SdvxController {
@@ -133,6 +135,8 @@ impl SdvxController {
             NVIC::unmask(Interrupt::USB_LP_CAN_RX0);
         }
 
+        let timer = MonoTimer::new(cp.DWT, cp.DCB, clocks);
+
         SdvxController {
             start_input,
             button1_input,
@@ -149,12 +153,14 @@ impl SdvxController {
             status: SdvxStatus::new(),
             bcm,
             last_keycodes: [SdvxKeycode::No as u8; 6],
+            timer_start: timer.now(),
         }
     }
 
     pub fn tick(&mut self) {
         self.update_status();
-        self.bcm.tick(&self.status);
+
+        self.bcm.tick(&self.status, self.timer_start.elapsed());
 
         let mut keycodes = [SdvxKeycode::No as u8; 6];
         let mut current_keycode = 0;
