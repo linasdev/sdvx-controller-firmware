@@ -1,17 +1,17 @@
 use embedded_hal::digital::v2::InputPin;
+use rotary_encoder_hal::{Direction, Rotary};
 use stm32f1xx_hal::gpio::gpioa::*;
 use stm32f1xx_hal::gpio::{Input, PullDown, PullUp};
 use stm32f1xx_hal::pac::{CorePeripherals, Peripherals, NVIC};
 use stm32f1xx_hal::prelude::*;
 use stm32f1xx_hal::stm32::{interrupt, Interrupt};
+use stm32f1xx_hal::time::{Instant, MonoTimer};
 use stm32f1xx_hal::usb::{Peripheral, UsbBus, UsbBusType};
-use stm32f1xx_hal::time::{MonoTimer, Instant};
 use usb_device::bus::UsbBusAllocator;
 use usb_device::prelude::*;
 use usbd_hid::descriptor::generator_prelude::*;
 use usbd_hid::descriptor::KeyboardReport;
 use usbd_hid::hid_class::HIDClass;
-use rotary_encoder_hal::{Direction, Rotary};
 
 use crate::sdvx_bcm::SdvxBcm;
 use crate::sdvx_keycode::SdvxKeycode;
@@ -55,7 +55,7 @@ pub struct SdvxController {
     status: SdvxStatus,
     bcm: SdvxBcm,
     last_keycodes: [u8; 6],
-    timer_start: Instant
+    timer_start: Instant,
 }
 
 impl SdvxController {

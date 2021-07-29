@@ -96,7 +96,7 @@ impl SdvxBcm {
             NVIC::unmask(Interrupt::TIM2);
         }
 
-        SdvxBcm { 
+        SdvxBcm {
             led_brightness,
             start_tick: 0,
             button1_tick: 0,
@@ -117,7 +117,13 @@ impl SdvxBcm {
         let mut new_led_brightness = [0x00u8; BCM_LED_COUNT];
 
         if status.button1_pressed || self.button1_tick + BCM_ANIMATION_TIME_TICKS > current_tick {
-            SdvxBcm::modify_led_value_rgb(&mut new_led_brightness, 0, sin_value, 0xff - sin_value, 0);
+            SdvxBcm::modify_led_value_rgb(
+                &mut new_led_brightness,
+                0,
+                sin_value,
+                0xff - sin_value,
+                0,
+            );
 
             if status.button1_pressed {
                 self.button1_tick = current_tick;
@@ -125,7 +131,13 @@ impl SdvxBcm {
         }
 
         if status.button2_pressed || self.button2_tick + BCM_ANIMATION_TIME_TICKS > current_tick {
-            SdvxBcm::modify_led_value_rgb(&mut new_led_brightness, 1, 0, sin_value, 0xff - sin_value);
+            SdvxBcm::modify_led_value_rgb(
+                &mut new_led_brightness,
+                1,
+                0,
+                sin_value,
+                0xff - sin_value,
+            );
 
             if status.button2_pressed {
                 self.button2_tick = current_tick;
@@ -133,7 +145,13 @@ impl SdvxBcm {
         }
 
         if status.button3_pressed || self.button3_tick + BCM_ANIMATION_TIME_TICKS > current_tick {
-            SdvxBcm::modify_led_value_rgb(&mut new_led_brightness, 2, 0, sin_value, 0xff - sin_value);
+            SdvxBcm::modify_led_value_rgb(
+                &mut new_led_brightness,
+                2,
+                0,
+                sin_value,
+                0xff - sin_value,
+            );
 
             if status.button3_pressed {
                 self.button3_tick = current_tick;
@@ -141,7 +159,13 @@ impl SdvxBcm {
         }
 
         if status.button4_pressed || self.button4_tick + BCM_ANIMATION_TIME_TICKS > current_tick {
-            SdvxBcm::modify_led_value_rgb(&mut new_led_brightness, 3, sin_value, 0xff - sin_value, 0);
+            SdvxBcm::modify_led_value_rgb(
+                &mut new_led_brightness,
+                3,
+                sin_value,
+                0xff - sin_value,
+                0,
+            );
 
             if status.button4_pressed {
                 self.button4_tick = current_tick;
@@ -149,7 +173,13 @@ impl SdvxBcm {
         }
 
         if status.fx_l_pressed || self.fx_l_tick + BCM_ANIMATION_TIME_TICKS > current_tick {
-            SdvxBcm::modify_led_value_rgb(&mut new_led_brightness, 4, sin_value, 0xff - sin_value, 0);
+            SdvxBcm::modify_led_value_rgb(
+                &mut new_led_brightness,
+                4,
+                sin_value,
+                0xff - sin_value,
+                0,
+            );
 
             if status.fx_l_pressed {
                 self.fx_l_tick = current_tick;
@@ -157,16 +187,36 @@ impl SdvxBcm {
         }
 
         if status.fx_r_pressed || self.fx_r_tick + BCM_ANIMATION_TIME_TICKS > current_tick {
-            SdvxBcm::modify_led_value_rgb(&mut new_led_brightness, 5, sin_value, 0xff - sin_value, 0);
+            SdvxBcm::modify_led_value_rgb(
+                &mut new_led_brightness,
+                5,
+                sin_value,
+                0xff - sin_value,
+                0,
+            );
 
             if status.fx_r_pressed {
                 self.fx_r_tick = current_tick;
             }
         }
 
-        if status.rotary1_rotated_ccw || self.rotary1_tick_ccw + BCM_ANIMATION_TIME_TICKS > current_tick  {
-            SdvxBcm::modify_led_value_rgb(&mut new_led_brightness, 0, sin_value, 0xff - sin_value, 0);
-            SdvxBcm::modify_led_value_rgb(&mut new_led_brightness, 4, sin_value, 0, 0xff - sin_value);
+        if status.rotary1_rotated_ccw
+            || self.rotary1_tick_ccw + BCM_ANIMATION_TIME_TICKS > current_tick
+        {
+            SdvxBcm::modify_led_value_rgb(
+                &mut new_led_brightness,
+                0,
+                sin_value,
+                0xff - sin_value,
+                0,
+            );
+            SdvxBcm::modify_led_value_rgb(
+                &mut new_led_brightness,
+                4,
+                sin_value,
+                0,
+                0xff - sin_value,
+            );
 
             if status.rotary1_rotated_ccw {
                 self.rotary1_tick_ccw = current_tick;
@@ -174,9 +224,23 @@ impl SdvxBcm {
             }
         }
 
-        if status.rotary1_rotated_cw || self.rotary1_tick_cw + BCM_ANIMATION_TIME_TICKS > current_tick  {
-            SdvxBcm::modify_led_value_rgb(&mut new_led_brightness, 0, sin_value, 0, 0xff - sin_value);
-            SdvxBcm::modify_led_value_rgb(&mut new_led_brightness, 4, sin_value, 0xff - sin_value, 0);
+        if status.rotary1_rotated_cw
+            || self.rotary1_tick_cw + BCM_ANIMATION_TIME_TICKS > current_tick
+        {
+            SdvxBcm::modify_led_value_rgb(
+                &mut new_led_brightness,
+                0,
+                sin_value,
+                0,
+                0xff - sin_value,
+            );
+            SdvxBcm::modify_led_value_rgb(
+                &mut new_led_brightness,
+                4,
+                sin_value,
+                0xff - sin_value,
+                0,
+            );
 
             if status.rotary1_rotated_cw {
                 self.rotary1_tick_ccw = 0;
@@ -184,9 +248,23 @@ impl SdvxBcm {
             }
         }
 
-        if status.rotary2_rotated_ccw || self.rotary2_tick_ccw + BCM_ANIMATION_TIME_TICKS > current_tick  {
-            SdvxBcm::modify_led_value_rgb(&mut new_led_brightness, 3, sin_value, 0xff - sin_value, 0);
-            SdvxBcm::modify_led_value_rgb(&mut new_led_brightness, 5, sin_value, 0, 0xff - sin_value);
+        if status.rotary2_rotated_ccw
+            || self.rotary2_tick_ccw + BCM_ANIMATION_TIME_TICKS > current_tick
+        {
+            SdvxBcm::modify_led_value_rgb(
+                &mut new_led_brightness,
+                3,
+                sin_value,
+                0xff - sin_value,
+                0,
+            );
+            SdvxBcm::modify_led_value_rgb(
+                &mut new_led_brightness,
+                5,
+                sin_value,
+                0,
+                0xff - sin_value,
+            );
 
             if status.rotary2_rotated_ccw {
                 self.rotary2_tick_ccw = current_tick;
@@ -194,9 +272,23 @@ impl SdvxBcm {
             }
         }
 
-        if status.rotary2_rotated_cw || self.rotary2_tick_cw + BCM_ANIMATION_TIME_TICKS > current_tick  {
-            SdvxBcm::modify_led_value_rgb(&mut new_led_brightness, 3, sin_value, 0, 0xff - sin_value);
-            SdvxBcm::modify_led_value_rgb(&mut new_led_brightness, 5, sin_value, 0xff - sin_value, 0);
+        if status.rotary2_rotated_cw
+            || self.rotary2_tick_cw + BCM_ANIMATION_TIME_TICKS > current_tick
+        {
+            SdvxBcm::modify_led_value_rgb(
+                &mut new_led_brightness,
+                3,
+                sin_value,
+                0,
+                0xff - sin_value,
+            );
+            SdvxBcm::modify_led_value_rgb(
+                &mut new_led_brightness,
+                5,
+                sin_value,
+                0xff - sin_value,
+                0,
+            );
 
             if status.rotary2_rotated_cw {
                 self.rotary2_tick_ccw = 0;
@@ -204,9 +296,21 @@ impl SdvxBcm {
             }
         }
 
-        if status.start_pressed || self.start_tick + BCM_ANIMATION_TIME_TICKS > current_tick  {
-            SdvxBcm::modify_led_value_rgb(&mut new_led_brightness, 1, sin_value, 0, 0xff - sin_value);
-            SdvxBcm::modify_led_value_rgb(&mut new_led_brightness, 2, sin_value, 0, 0xff - sin_value);
+        if status.start_pressed || self.start_tick + BCM_ANIMATION_TIME_TICKS > current_tick {
+            SdvxBcm::modify_led_value_rgb(
+                &mut new_led_brightness,
+                1,
+                sin_value,
+                0,
+                0xff - sin_value,
+            );
+            SdvxBcm::modify_led_value_rgb(
+                &mut new_led_brightness,
+                2,
+                sin_value,
+                0,
+                0xff - sin_value,
+            );
 
             if status.start_pressed {
                 self.start_tick = current_tick;
@@ -234,7 +338,10 @@ impl SdvxBcm {
         SdvxBcm::modify_led_value(led_brightness, index * 3 + 2, blue_value);
     }
 
-    fn modify_led_values(led_brightness: &mut [u8; BCM_LED_COUNT], new_led_brightness: &[u8; BCM_LED_COUNT]) {
+    fn modify_led_values(
+        led_brightness: &mut [u8; BCM_LED_COUNT],
+        new_led_brightness: &[u8; BCM_LED_COUNT],
+    ) {
         free(|_| {
             for i in 0..led_brightness.len() {
                 (*led_brightness)[i] = new_led_brightness[i];
