@@ -56,7 +56,6 @@ impl SdvxBcm {
         shift_latch: PB14<Output<PushPull>>,
         shift_data: PB15<Alternate<PushPull>>,
         spi2: SPI2,
-        mut syst: SYST,
         clocks: Clocks,
         apb1: &mut APB1,
         tim2: TIM2,

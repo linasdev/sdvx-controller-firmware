@@ -123,7 +123,6 @@ impl SdvxController {
             gpiob.pb14.into_push_pull_output(&mut gpiob.crh),
             gpiob.pb15.into_alternate_push_pull(&mut gpiob.crh),
             dp.SPI2,
-            cp.SYST,
             clocks,
             &mut rcc.apb1,
             dp.TIM2,
