@@ -43,7 +43,7 @@ impl SdvxAnimation for SdvxFadeAnimation {
         if status.button1_pressed || self.button1_tick + FADE_ANIMATION_TIME_TICKS > current_tick {
             let floating_index = (current_tick - self.button1_tick) as f32 / FADE_ANIMATION_TIME_TICKS as f32;
             let index = (floating_index * 255f32) as usize;
-            let cos_value = SDVX_COS_TABLE[index];
+            let cos_value = SDVX_COS_TABLE[index % 256];
 
             SdvxFadeAnimation::modify_led_value_rgb(
                 &mut new_led_brightness,
@@ -61,7 +61,7 @@ impl SdvxAnimation for SdvxFadeAnimation {
         if status.button2_pressed || self.button2_tick + FADE_ANIMATION_TIME_TICKS > current_tick {
             let floating_index = (current_tick - self.button2_tick) as f32 / FADE_ANIMATION_TIME_TICKS as f32;
             let index = (floating_index * 255f32) as usize;
-            let cos_value = SDVX_COS_TABLE[index];
+            let cos_value = SDVX_COS_TABLE[index % 256];
 
             SdvxFadeAnimation::modify_led_value_rgb(
                 &mut new_led_brightness,
@@ -79,7 +79,7 @@ impl SdvxAnimation for SdvxFadeAnimation {
         if status.button3_pressed || self.button3_tick + FADE_ANIMATION_TIME_TICKS > current_tick {
             let floating_index = (current_tick - self.button3_tick) as f32 / FADE_ANIMATION_TIME_TICKS as f32;
             let index = (floating_index * 255f32) as usize;
-            let cos_value = SDVX_COS_TABLE[index];
+            let cos_value = SDVX_COS_TABLE[index % 256];
 
             SdvxFadeAnimation::modify_led_value_rgb(
                 &mut new_led_brightness,
@@ -97,7 +97,7 @@ impl SdvxAnimation for SdvxFadeAnimation {
         if status.button4_pressed || self.button4_tick + FADE_ANIMATION_TIME_TICKS > current_tick {
             let floating_index = (current_tick - self.button4_tick) as f32 / FADE_ANIMATION_TIME_TICKS as f32;
             let index = (floating_index * 255f32) as usize;
-            let cos_value = SDVX_COS_TABLE[index];
+            let cos_value = SDVX_COS_TABLE[index % 256];
 
             SdvxFadeAnimation::modify_led_value_rgb(
                 &mut new_led_brightness,
@@ -115,7 +115,7 @@ impl SdvxAnimation for SdvxFadeAnimation {
         if status.fx_l_pressed || self.fx_l_tick + FADE_ANIMATION_TIME_TICKS > current_tick {
             let floating_index = (current_tick - self.fx_l_tick) as f32 / FADE_ANIMATION_TIME_TICKS as f32;
             let index = (floating_index * 255f32) as usize;
-            let cos_value = SDVX_COS_TABLE[index];
+            let cos_value = SDVX_COS_TABLE[index % 256];
 
             SdvxFadeAnimation::modify_led_value_rgb(
                 &mut new_led_brightness,
@@ -133,7 +133,7 @@ impl SdvxAnimation for SdvxFadeAnimation {
         if status.fx_r_pressed || self.fx_r_tick + FADE_ANIMATION_TIME_TICKS > current_tick {
             let floating_index = (current_tick - self.fx_r_tick) as f32 / FADE_ANIMATION_TIME_TICKS as f32;
             let index = (floating_index * 255f32) as usize;
-            let cos_value = SDVX_COS_TABLE[index];
+            let cos_value = SDVX_COS_TABLE[index % 256];
 
             SdvxFadeAnimation::modify_led_value_rgb(
                 &mut new_led_brightness,
@@ -152,7 +152,7 @@ impl SdvxAnimation for SdvxFadeAnimation {
         {
             let floating_index = (current_tick - self.rotary1_tick_ccw) as f32 / FADE_ANIMATION_TIME_TICKS as f32;
             let index = (floating_index * 255f32) as usize;
-            let cos_value = SDVX_COS_TABLE[index];
+            let cos_value = SDVX_COS_TABLE[index % 256];
 
             SdvxFadeAnimation::modify_led_value_rgb(
                 &mut new_led_brightness,
@@ -180,7 +180,7 @@ impl SdvxAnimation for SdvxFadeAnimation {
         {
             let floating_index = (current_tick - self.rotary1_tick_cw) as f32 / FADE_ANIMATION_TIME_TICKS as f32;
             let index = (floating_index * 255f32) as usize;
-            let cos_value = SDVX_COS_TABLE[index];
+            let cos_value = SDVX_COS_TABLE[index % 256];
 
             SdvxFadeAnimation::modify_led_value_rgb(
                 &mut new_led_brightness,
@@ -200,7 +200,7 @@ impl SdvxAnimation for SdvxFadeAnimation {
         {
             let floating_index = (current_tick - self.rotary2_tick_ccw) as f32 / FADE_ANIMATION_TIME_TICKS as f32;
             let index = (floating_index * 255f32) as usize;
-            let cos_value = SDVX_COS_TABLE[index];
+            let cos_value = SDVX_COS_TABLE[index % 256];
 
             SdvxFadeAnimation::modify_led_value_rgb(
                 &mut new_led_brightness,
@@ -220,7 +220,7 @@ impl SdvxAnimation for SdvxFadeAnimation {
         {
             let floating_index = (current_tick - self.rotary2_tick_cw) as f32 / FADE_ANIMATION_TIME_TICKS as f32;
             let index = (floating_index * 255f32) as usize;
-            let cos_value = SDVX_COS_TABLE[index];
+            let cos_value = SDVX_COS_TABLE[index % 256];
 
             SdvxFadeAnimation::modify_led_value_rgb(
                 &mut new_led_brightness,
@@ -247,7 +247,7 @@ impl SdvxAnimation for SdvxFadeAnimation {
         if status.start_pressed || self.start_tick + FADE_ANIMATION_TIME_TICKS > current_tick {
             let floating_index = (current_tick - self.start_tick) as f32 / FADE_ANIMATION_TIME_TICKS as f32;
             let index = (floating_index * 255f32) as usize;
-            let cos_value = SDVX_COS_TABLE[index];
+            let cos_value = SDVX_COS_TABLE[index % 256];
 
             SdvxFadeAnimation::modify_led_value_rgb(
                 &mut new_led_brightness,
