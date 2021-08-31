@@ -13,6 +13,7 @@ use usbd_hid::descriptor::generator_prelude::*;
 use usbd_hid::descriptor::KeyboardReport;
 use usbd_hid::hid_class::HIDClass;
 
+use crate::sdvx_animation::SdvxAnimation;
 use crate::sdvx_bcm::SdvxBcm;
 use crate::sdvx_keycode::SdvxKeycode;
 use crate::sdvx_status::SdvxStatus;
@@ -39,7 +40,7 @@ static mut USB_BUS: Option<UsbBusAllocator<UsbBusType>> = None;
 static mut USB_HID: Option<HIDClass<UsbBusType>> = None;
 static mut USB_DEV: Option<UsbDevice<UsbBusType>> = None;
 
-pub struct SdvxController {
+pub struct SdvxController<A: SdvxAnimation> {
     start_input: PA0<Input<PullDown>>,
     button1_input: PA1<Input<PullDown>>,
     button2_input: PA2<Input<PullDown>>,
@@ -53,13 +54,13 @@ pub struct SdvxController {
     rotary2_counter: i8,
     usb_hid: &'static HIDClass<'static, UsbBusType>,
     status: SdvxStatus,
-    bcm: SdvxBcm,
+    bcm: SdvxBcm<A>,
     last_keycodes: [u8; 6],
     timer_start: Instant,
 }
 
-impl SdvxController {
-    pub fn new(cp: CorePeripherals, dp: Peripherals) -> Self {
+impl<A: SdvxAnimation> SdvxController<A> {
+    pub fn new(animation: A, cp: CorePeripherals, dp: Peripherals) -> Self {
         let mut flash = dp.FLASH.constrain();
         let mut rcc = dp.RCC.constrain();
 
@@ -119,6 +120,7 @@ impl SdvxController {
         let usb_hid = unsafe { USB_HID.as_ref().unwrap() };
 
         let bcm = SdvxBcm::new(
+            animation,
             gpiob.pb13.into_alternate_push_pull(&mut gpiob.crh),
             gpiob.pb14.into_push_pull_output(&mut gpiob.crh),
             gpiob.pb15.into_alternate_push_pull(&mut gpiob.crh),
