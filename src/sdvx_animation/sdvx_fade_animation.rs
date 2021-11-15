@@ -5,6 +5,12 @@ use crate::sdvx_animation::SdvxAnimation;
 
 // Amount of ticks for the animation to end after a button is released
 const FADE_ANIMATION_TIME_TICKS: u32 = 20_000_000;
+const BUTTON1_LED_INDEX: usize = 18;
+const BUTTON2_LED_INDEX: usize = 19;
+const BUTTON3_LED_INDEX: usize = 20;
+const BUTTON4_LED_INDEX: usize = 21;
+const FX_L_LED_INDEX: usize = 22;
+const FX_R_LED_INDEX: usize = 23;
 
 pub struct SdvxFadeAnimation {
     start_tick: u32,
@@ -40,6 +46,64 @@ impl SdvxAnimation for SdvxFadeAnimation {
     fn tick(&mut self, status: &SdvxStatus, current_tick: u32) -> [u8; BCM_LED_COUNT] {
         let mut new_led_brightness = [0x00u8; BCM_LED_COUNT];
 
+        if status.start_pressed || self.start_tick + FADE_ANIMATION_TIME_TICKS > current_tick {
+            let floating_index = (current_tick - self.start_tick) as f32 / FADE_ANIMATION_TIME_TICKS as f32;
+            let index = (floating_index * 255f32) as usize;
+            let cos_value = SDVX_COS_TABLE[index % 256];
+
+            SdvxFadeAnimation::modify_led_value_rgb(
+                &mut new_led_brightness,
+                0,
+                0xff - cos_value,
+                0x00,
+                cos_value,
+            );
+
+            SdvxFadeAnimation::modify_led_value_rgb(
+                &mut new_led_brightness,
+                1,
+                0xff - cos_value,
+                0x00,
+                cos_value,
+            );
+
+            SdvxFadeAnimation::modify_led_value_rgb(
+                &mut new_led_brightness,
+                2,
+                0xff - cos_value,
+                0x00,
+                cos_value,
+            );
+
+            SdvxFadeAnimation::modify_led_value_rgb(
+                &mut new_led_brightness,
+                3,
+                0xff - cos_value,
+                0x00,
+                cos_value,
+            );
+
+            SdvxFadeAnimation::modify_led_value_rgb(
+                &mut new_led_brightness,
+                4,
+                0xff - cos_value,
+                0x00,
+                cos_value,
+            );
+
+            SdvxFadeAnimation::modify_led_value_rgb(
+                &mut new_led_brightness,
+                5,
+                0xff - cos_value,
+                0x00,
+                cos_value,
+            );
+
+            if status.start_pressed {
+                self.start_tick = current_tick;
+            }
+        }
+
         if status.button1_pressed || self.button1_tick + FADE_ANIMATION_TIME_TICKS > current_tick {
             let floating_index = (current_tick - self.button1_tick) as f32 / FADE_ANIMATION_TIME_TICKS as f32;
             let index = (floating_index * 255f32) as usize;
@@ -50,6 +114,12 @@ impl SdvxAnimation for SdvxFadeAnimation {
                 0,
                 0xff - cos_value,
                 0x00,
+                cos_value,
+            );
+
+            SdvxFadeAnimation::modify_led_value(
+                &mut new_led_brightness,
+                BUTTON1_LED_INDEX,
                 cos_value,
             );
 
@@ -71,6 +141,12 @@ impl SdvxAnimation for SdvxFadeAnimation {
                 cos_value,
             );
 
+            SdvxFadeAnimation::modify_led_value(
+                &mut new_led_brightness,
+                BUTTON2_LED_INDEX,
+                cos_value,
+            );
+
             if status.button2_pressed {
                 self.button2_tick = current_tick;
             }
@@ -86,6 +162,12 @@ impl SdvxAnimation for SdvxFadeAnimation {
                 2,
                 0xff - cos_value,
                 0x00,
+                cos_value,
+            );
+
+            SdvxFadeAnimation::modify_led_value(
+                &mut new_led_brightness,
+                BUTTON3_LED_INDEX,
                 cos_value,
             );
 
@@ -107,6 +189,12 @@ impl SdvxAnimation for SdvxFadeAnimation {
                 cos_value,
             );
 
+            SdvxFadeAnimation::modify_led_value(
+                &mut new_led_brightness,
+                BUTTON4_LED_INDEX,
+                cos_value,
+            );
+
             if status.button4_pressed {
                 self.button4_tick = current_tick;
             }
@@ -125,6 +213,12 @@ impl SdvxAnimation for SdvxFadeAnimation {
                 cos_value,
             );
 
+            SdvxFadeAnimation::modify_led_value(
+                &mut new_led_brightness,
+                FX_L_LED_INDEX,
+                cos_value,
+            );
+
             if status.fx_l_pressed {
                 self.fx_l_tick = current_tick;
             }
@@ -140,6 +234,12 @@ impl SdvxAnimation for SdvxFadeAnimation {
                 5,
                 0xff - cos_value,
                 0x00,
+                cos_value,
+            );
+
+            SdvxFadeAnimation::modify_led_value(
+                &mut new_led_brightness,
+                FX_R_LED_INDEX,
                 cos_value,
             );
 
@@ -244,64 +344,6 @@ impl SdvxAnimation for SdvxFadeAnimation {
             }
         }
 
-        if status.start_pressed || self.start_tick + FADE_ANIMATION_TIME_TICKS > current_tick {
-            let floating_index = (current_tick - self.start_tick) as f32 / FADE_ANIMATION_TIME_TICKS as f32;
-            let index = (floating_index * 255f32) as usize;
-            let cos_value = SDVX_COS_TABLE[index % 256];
-
-            SdvxFadeAnimation::modify_led_value_rgb(
-                &mut new_led_brightness,
-                0,
-                0xff - cos_value,
-                0x00,
-                cos_value,
-            );
-
-            SdvxFadeAnimation::modify_led_value_rgb(
-                &mut new_led_brightness,
-                1,
-                0xff - cos_value,
-                0x00,
-                cos_value,
-            );
-
-            SdvxFadeAnimation::modify_led_value_rgb(
-                &mut new_led_brightness,
-                2,
-                0xff - cos_value,
-                0x00,
-                cos_value,
-            );
-
-            SdvxFadeAnimation::modify_led_value_rgb(
-                &mut new_led_brightness,
-                3,
-                0xff - cos_value,
-                0x00,
-                cos_value,
-            );
-
-            SdvxFadeAnimation::modify_led_value_rgb(
-                &mut new_led_brightness,
-                4,
-                0xff - cos_value,
-                0x00,
-                cos_value,
-            );
-
-            SdvxFadeAnimation::modify_led_value_rgb(
-                &mut new_led_brightness,
-                5,
-                0xff - cos_value,
-                0x00,
-                cos_value,
-            );
-
-            if status.start_pressed {
-                self.start_tick = current_tick;
-            }
-        }
-
         return new_led_brightness;
     }
 }
@@ -317,5 +359,13 @@ impl SdvxFadeAnimation {
         (*led_brightness)[index * 3 + 0] = red_value;
         (*led_brightness)[index * 3 + 1] = green_value;
         (*led_brightness)[index * 3 + 2] = blue_value;
+    }
+
+    fn modify_led_value(
+        led_brightness: &mut [u8; BCM_LED_COUNT],
+        index: usize,
+        value: u8,
+    ) {
+        (*led_brightness)[index] = value;
     }
 }
