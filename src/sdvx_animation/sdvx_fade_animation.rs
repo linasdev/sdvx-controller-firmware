@@ -1,7 +1,7 @@
+use crate::sdvx_animation::SdvxAnimation;
+use crate::sdvx_bcm::BCM_LED_COUNT;
 use crate::sdvx_cos_table::SDVX_COS_TABLE;
 use crate::sdvx_status::SdvxStatus;
-use crate::sdvx_bcm::BCM_LED_COUNT;
-use crate::sdvx_animation::SdvxAnimation;
 
 // Amount of ticks for the animation to end after a button is released
 const FADE_ANIMATION_TIME_TICKS: u32 = 20_000_000;
@@ -47,7 +47,8 @@ impl SdvxAnimation for SdvxFadeAnimation {
         let mut new_led_brightness = [0x00u8; BCM_LED_COUNT];
 
         if status.start_pressed || self.start_tick + FADE_ANIMATION_TIME_TICKS > current_tick {
-            let floating_index = (current_tick - self.start_tick) as f32 / FADE_ANIMATION_TIME_TICKS as f32;
+            let floating_index =
+                (current_tick - self.start_tick) as f32 / FADE_ANIMATION_TIME_TICKS as f32;
             let index = (floating_index * 255f32) as usize;
             let cos_value = SDVX_COS_TABLE[index % 256];
 
@@ -105,7 +106,8 @@ impl SdvxAnimation for SdvxFadeAnimation {
         }
 
         if status.button1_pressed || self.button1_tick + FADE_ANIMATION_TIME_TICKS > current_tick {
-            let floating_index = (current_tick - self.button1_tick) as f32 / FADE_ANIMATION_TIME_TICKS as f32;
+            let floating_index =
+                (current_tick - self.button1_tick) as f32 / FADE_ANIMATION_TIME_TICKS as f32;
             let index = (floating_index * 255f32) as usize;
             let cos_value = SDVX_COS_TABLE[index % 256];
 
@@ -129,7 +131,8 @@ impl SdvxAnimation for SdvxFadeAnimation {
         }
 
         if status.button2_pressed || self.button2_tick + FADE_ANIMATION_TIME_TICKS > current_tick {
-            let floating_index = (current_tick - self.button2_tick) as f32 / FADE_ANIMATION_TIME_TICKS as f32;
+            let floating_index =
+                (current_tick - self.button2_tick) as f32 / FADE_ANIMATION_TIME_TICKS as f32;
             let index = (floating_index * 255f32) as usize;
             let cos_value = SDVX_COS_TABLE[index % 256];
 
@@ -153,7 +156,8 @@ impl SdvxAnimation for SdvxFadeAnimation {
         }
 
         if status.button3_pressed || self.button3_tick + FADE_ANIMATION_TIME_TICKS > current_tick {
-            let floating_index = (current_tick - self.button3_tick) as f32 / FADE_ANIMATION_TIME_TICKS as f32;
+            let floating_index =
+                (current_tick - self.button3_tick) as f32 / FADE_ANIMATION_TIME_TICKS as f32;
             let index = (floating_index * 255f32) as usize;
             let cos_value = SDVX_COS_TABLE[index % 256];
 
@@ -177,7 +181,8 @@ impl SdvxAnimation for SdvxFadeAnimation {
         }
 
         if status.button4_pressed || self.button4_tick + FADE_ANIMATION_TIME_TICKS > current_tick {
-            let floating_index = (current_tick - self.button4_tick) as f32 / FADE_ANIMATION_TIME_TICKS as f32;
+            let floating_index =
+                (current_tick - self.button4_tick) as f32 / FADE_ANIMATION_TIME_TICKS as f32;
             let index = (floating_index * 255f32) as usize;
             let cos_value = SDVX_COS_TABLE[index % 256];
 
@@ -201,7 +206,8 @@ impl SdvxAnimation for SdvxFadeAnimation {
         }
 
         if status.fx_l_pressed || self.fx_l_tick + FADE_ANIMATION_TIME_TICKS > current_tick {
-            let floating_index = (current_tick - self.fx_l_tick) as f32 / FADE_ANIMATION_TIME_TICKS as f32;
+            let floating_index =
+                (current_tick - self.fx_l_tick) as f32 / FADE_ANIMATION_TIME_TICKS as f32;
             let index = (floating_index * 255f32) as usize;
             let cos_value = SDVX_COS_TABLE[index % 256];
 
@@ -213,11 +219,7 @@ impl SdvxAnimation for SdvxFadeAnimation {
                 cos_value,
             );
 
-            SdvxFadeAnimation::modify_led_value(
-                &mut new_led_brightness,
-                FX_L_LED_INDEX,
-                cos_value,
-            );
+            SdvxFadeAnimation::modify_led_value(&mut new_led_brightness, FX_L_LED_INDEX, cos_value);
 
             if status.fx_l_pressed {
                 self.fx_l_tick = current_tick;
@@ -225,7 +227,8 @@ impl SdvxAnimation for SdvxFadeAnimation {
         }
 
         if status.fx_r_pressed || self.fx_r_tick + FADE_ANIMATION_TIME_TICKS > current_tick {
-            let floating_index = (current_tick - self.fx_r_tick) as f32 / FADE_ANIMATION_TIME_TICKS as f32;
+            let floating_index =
+                (current_tick - self.fx_r_tick) as f32 / FADE_ANIMATION_TIME_TICKS as f32;
             let index = (floating_index * 255f32) as usize;
             let cos_value = SDVX_COS_TABLE[index % 256];
 
@@ -237,20 +240,18 @@ impl SdvxAnimation for SdvxFadeAnimation {
                 cos_value,
             );
 
-            SdvxFadeAnimation::modify_led_value(
-                &mut new_led_brightness,
-                FX_R_LED_INDEX,
-                cos_value,
-            );
+            SdvxFadeAnimation::modify_led_value(&mut new_led_brightness, FX_R_LED_INDEX, cos_value);
 
             if status.fx_r_pressed {
                 self.fx_r_tick = current_tick;
             }
         }
 
-        if status.rotary1_rotated_ccw || self.rotary1_tick_ccw + FADE_ANIMATION_TIME_TICKS > current_tick
+        if status.rotary1_rotated_ccw
+            || self.rotary1_tick_ccw + FADE_ANIMATION_TIME_TICKS > current_tick
         {
-            let floating_index = (current_tick - self.rotary1_tick_ccw) as f32 / FADE_ANIMATION_TIME_TICKS as f32;
+            let floating_index =
+                (current_tick - self.rotary1_tick_ccw) as f32 / FADE_ANIMATION_TIME_TICKS as f32;
             let index = (floating_index * 255f32) as usize;
             let cos_value = SDVX_COS_TABLE[index % 256];
 
@@ -276,9 +277,11 @@ impl SdvxAnimation for SdvxFadeAnimation {
             }
         }
 
-        if status.rotary1_rotated_cw || self.rotary1_tick_cw + FADE_ANIMATION_TIME_TICKS > current_tick
+        if status.rotary1_rotated_cw
+            || self.rotary1_tick_cw + FADE_ANIMATION_TIME_TICKS > current_tick
         {
-            let floating_index = (current_tick - self.rotary1_tick_cw) as f32 / FADE_ANIMATION_TIME_TICKS as f32;
+            let floating_index =
+                (current_tick - self.rotary1_tick_cw) as f32 / FADE_ANIMATION_TIME_TICKS as f32;
             let index = (floating_index * 255f32) as usize;
             let cos_value = SDVX_COS_TABLE[index % 256];
 
@@ -296,9 +299,11 @@ impl SdvxAnimation for SdvxFadeAnimation {
             }
         }
 
-        if status.rotary2_rotated_ccw || self.rotary2_tick_ccw + FADE_ANIMATION_TIME_TICKS > current_tick
+        if status.rotary2_rotated_ccw
+            || self.rotary2_tick_ccw + FADE_ANIMATION_TIME_TICKS > current_tick
         {
-            let floating_index = (current_tick - self.rotary2_tick_ccw) as f32 / FADE_ANIMATION_TIME_TICKS as f32;
+            let floating_index =
+                (current_tick - self.rotary2_tick_ccw) as f32 / FADE_ANIMATION_TIME_TICKS as f32;
             let index = (floating_index * 255f32) as usize;
             let cos_value = SDVX_COS_TABLE[index % 256];
 
@@ -316,9 +321,11 @@ impl SdvxAnimation for SdvxFadeAnimation {
             }
         }
 
-        if status.rotary2_rotated_cw || self.rotary2_tick_cw + FADE_ANIMATION_TIME_TICKS > current_tick
+        if status.rotary2_rotated_cw
+            || self.rotary2_tick_cw + FADE_ANIMATION_TIME_TICKS > current_tick
         {
-            let floating_index = (current_tick - self.rotary2_tick_cw) as f32 / FADE_ANIMATION_TIME_TICKS as f32;
+            let floating_index =
+                (current_tick - self.rotary2_tick_cw) as f32 / FADE_ANIMATION_TIME_TICKS as f32;
             let index = (floating_index * 255f32) as usize;
             let cos_value = SDVX_COS_TABLE[index % 256];
 
@@ -361,11 +368,7 @@ impl SdvxFadeAnimation {
         (*led_brightness)[index * 3 + 2] = blue_value;
     }
 
-    fn modify_led_value(
-        led_brightness: &mut [u8; BCM_LED_COUNT],
-        index: usize,
-        value: u8,
-    ) {
+    fn modify_led_value(led_brightness: &mut [u8; BCM_LED_COUNT], index: usize, value: u8) {
         (*led_brightness)[index] = value;
     }
 }

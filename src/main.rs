@@ -12,8 +12,8 @@ use crate::sdvx_controller::SdvxController;
 mod sdvx_animation;
 mod sdvx_bcm;
 mod sdvx_controller;
-mod sdvx_keycode;
 mod sdvx_cos_table;
+mod sdvx_keycode;
 mod sdvx_status;
 
 #[entry]

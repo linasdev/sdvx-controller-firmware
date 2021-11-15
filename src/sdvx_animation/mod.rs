@@ -1,5 +1,5 @@
-use crate::sdvx_status::SdvxStatus;
 use crate::sdvx_bcm::BCM_LED_COUNT;
+use crate::sdvx_status::SdvxStatus;
 
 mod sdvx_fade_animation;
 pub use sdvx_fade_animation::*;

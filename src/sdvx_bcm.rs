@@ -1,5 +1,4 @@
 use cortex_m::interrupt::free;
-use cortex_m::asm::delay;
 use embedded_hal::digital::v2::OutputPin;
 use stm32f1xx_hal::gpio::gpiob::{PB13, PB14, PB15};
 use stm32f1xx_hal::gpio::{Alternate, Output, PushPull};
@@ -96,13 +95,11 @@ impl<A: SdvxAnimation> SdvxBcm<A> {
         self.swap_led_values(&new_led_brightness);
     }
 
-    fn swap_led_values(
-        &mut self,
-        new_led_brightness: &[u8; BCM_LED_COUNT],
-    ) {
+    fn swap_led_values(&mut self, new_led_brightness: &[u8; BCM_LED_COUNT]) {
         free(|_| {
             for i in 0..self.led_brightness.len() {
-                (*self.led_brightness)[i] = (new_led_brightness[i] as f32 * BCM_LED_BRIGHTNESS_MULTIPLIER) as u8;
+                (*self.led_brightness)[i] =
+                    (new_led_brightness[i] as f32 * BCM_LED_BRIGHTNESS_MULTIPLIER) as u8;
             }
         });
     }
