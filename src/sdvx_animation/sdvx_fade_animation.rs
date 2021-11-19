@@ -51,6 +51,10 @@ impl SdvxAnimation for SdvxFadeAnimation {
         self.clear_led_values();
         self.set_button_ticks(&status, current_tick);
 
+        if current_tick < FADE_ANIMATION_TIME_TICKS {
+            return self.new_led_brightness;
+        }
+
         if Self::should_animate(
             status.rotary1_rotated_ccw,
             self.rotary1_tick_ccw,
