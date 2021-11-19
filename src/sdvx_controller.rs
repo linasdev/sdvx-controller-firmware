@@ -25,6 +25,7 @@ static MAX_KEYCODE_COUNT: usize = 6;
 // HID report to send when the amount of keycodes exceeds MAX_KEYCODE_COUNT
 static ROLLOVER_ERROR_REPORT: KeyboardReport = KeyboardReport {
     modifier: 0x00,
+    reserved: 0x00,
     leds: 0x00,
     keycodes: [
         SdvxKeycode::ErrorRollOver as u8,
@@ -241,6 +242,7 @@ impl<A: SdvxAnimation> SdvxController<A> {
 
         let report = KeyboardReport {
             modifier: 0x00,
+            reserved: 0x00,
             leds: 0x00,
             keycodes,
         };
