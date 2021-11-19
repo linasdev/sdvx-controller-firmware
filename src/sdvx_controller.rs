@@ -2,7 +2,7 @@ use embedded_hal::digital::v2::InputPin;
 use rotary_encoder_hal::{Direction, Rotary};
 use stm32f1xx_hal::gpio::gpioa::*;
 use stm32f1xx_hal::gpio::{Input, PullDown, PullUp};
-use stm32f1xx_hal::pac::{CorePeripherals, Peripherals, NVIC};
+use stm32f1xx_hal::pac::{Peripherals, NVIC};
 use stm32f1xx_hal::prelude::*;
 use stm32f1xx_hal::stm32::{interrupt, Interrupt};
 use stm32f1xx_hal::usb::{Peripheral, UsbBus, UsbBusType};
@@ -60,7 +60,7 @@ pub struct SdvxController<A: SdvxAnimation> {
 }
 
 impl<A: SdvxAnimation> SdvxController<A> {
-    pub fn new(animation: A, cp: CorePeripherals, mut dp: Peripherals) -> Self {
+    pub fn new(animation: A, mut dp: Peripherals) -> Self {
         let sys_clock = SdvxSysClock::new(dp.TIM1, dp.TIM2, dp.TIM3, &mut dp.RCC);
         
         let mut flash = dp.FLASH.constrain();
