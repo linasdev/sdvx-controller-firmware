@@ -2,7 +2,7 @@ use cortex_m::interrupt::free;
 use embedded_hal::digital::v2::OutputPin;
 use stm32f1xx_hal::gpio::gpiob::{PB13, PB14, PB15};
 use stm32f1xx_hal::gpio::{Alternate, Output, PushPull};
-use stm32f1xx_hal::pac::{NVIC, SPI2, TIM2};
+use stm32f1xx_hal::pac::{NVIC, SPI2, TIM4};
 use stm32f1xx_hal::prelude::*;
 use stm32f1xx_hal::rcc::{Clocks, APB1};
 use stm32f1xx_hal::spi::{Mode, NoMiso, Phase, Polarity, Spi, Spi2NoRemap};
@@ -20,7 +20,7 @@ static BCM_SPI_FREQUENCY_HZ: u32 = 8_000_000;
 pub const BCM_LED_COUNT: usize = 24;
 const BCM_LED_BRIGHTNESS_MULTIPLIER: f32 = 1.0;
 // Timer for binary code modulation
-static mut BCM_TIMER: Option<CountDownTimer<TIM2>> = None;
+static mut BCM_TIMER: Option<CountDownTimer<TIM4>> = None;
 // Current frequency for binary code modulation in Hertz
 static mut BCM_CURRENT_FREQUENCY_HZ: u32 = BCM_INITIAL_FREQUENCY_HZ;
 // Current bitmask for binary code modulation
@@ -46,7 +46,7 @@ impl<A: SdvxAnimation> SdvxBcm<A> {
         spi2: SPI2,
         clocks: Clocks,
         apb1: &mut APB1,
-        tim2: TIM2,
+        tim4: TIM4,
     ) -> Self {
         let shift_spi = {
             let pins = (shift_clock, NoMiso, shift_data);
@@ -74,14 +74,14 @@ impl<A: SdvxAnimation> SdvxBcm<A> {
         let led_brightness = unsafe { &mut BCM_LED_BRIGHTNESS };
 
         let mut bcm_timer =
-            Timer::tim2(tim2, &clocks, apb1).start_count_down(BCM_INITIAL_FREQUENCY_HZ.hz());
+            Timer::tim4(tim4, &clocks, apb1).start_count_down(BCM_INITIAL_FREQUENCY_HZ.hz());
         bcm_timer.listen(Event::Update);
 
         unsafe {
             BCM_TIMER = Some(bcm_timer);
 
             // For binary code modulation
-            NVIC::unmask(Interrupt::TIM2);
+            NVIC::unmask(Interrupt::TIM4);
         }
 
         SdvxBcm {
@@ -106,7 +106,7 @@ impl<A: SdvxAnimation> SdvxBcm<A> {
 }
 
 #[interrupt]
-fn TIM2() {
+fn TIM4() {
     let shift_latch = unsafe { SHIFT_LATCH.as_mut().unwrap() };
     let shift_spi = unsafe { SHIFT_SPI.as_mut().unwrap() };
 

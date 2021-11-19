@@ -127,7 +127,7 @@ impl<A: SdvxAnimation> SdvxController<A> {
             dp.SPI2,
             clocks,
             &mut rcc.apb1,
-            dp.TIM2,
+            dp.TIM4,
         );
 
         unsafe {
