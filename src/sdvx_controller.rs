@@ -5,7 +5,6 @@ use stm32f1xx_hal::gpio::{Input, PullDown, PullUp};
 use stm32f1xx_hal::pac::{CorePeripherals, Peripherals, NVIC};
 use stm32f1xx_hal::prelude::*;
 use stm32f1xx_hal::stm32::{interrupt, Interrupt};
-use stm32f1xx_hal::time::{Instant, MonoTimer};
 use stm32f1xx_hal::usb::{Peripheral, UsbBus, UsbBusType};
 use usb_device::bus::UsbBusAllocator;
 use usb_device::prelude::*;
@@ -17,6 +16,7 @@ use crate::sdvx_animation::SdvxAnimation;
 use crate::sdvx_bcm::SdvxBcm;
 use crate::sdvx_keycode::SdvxKeycode;
 use crate::sdvx_status::SdvxStatus;
+use crate::sdvx_sys_clock::SdvxSysClock;
 
 // The higher the sensitivity, the less keypresses will be sent to the computer
 static ROTARY_SENSITIVITY: i8 = 2;
@@ -56,11 +56,13 @@ pub struct SdvxController<A: SdvxAnimation> {
     status: SdvxStatus,
     bcm: SdvxBcm<A>,
     last_keycodes: [u8; 6],
-    timer_start: Instant,
+    sys_clock: SdvxSysClock,
 }
 
 impl<A: SdvxAnimation> SdvxController<A> {
-    pub fn new(animation: A, cp: CorePeripherals, dp: Peripherals) -> Self {
+    pub fn new(animation: A, cp: CorePeripherals, mut dp: Peripherals) -> Self {
+        let sys_clock = SdvxSysClock::new(dp.TIM1, dp.TIM2, dp.TIM3, &mut dp.RCC);
+        
         let mut flash = dp.FLASH.constrain();
         let mut rcc = dp.RCC.constrain();
 
@@ -136,8 +138,6 @@ impl<A: SdvxAnimation> SdvxController<A> {
             NVIC::unmask(Interrupt::USB_LP_CAN_RX0);
         }
 
-        let timer = MonoTimer::new(cp.DWT, cp.DCB, clocks);
-
         SdvxController {
             start_input,
             button1_input,
@@ -154,14 +154,13 @@ impl<A: SdvxAnimation> SdvxController<A> {
             status: SdvxStatus::new(),
             bcm,
             last_keycodes: [SdvxKeycode::No as u8; 6],
-            timer_start: timer.now(),
+            sys_clock,
         }
     }
 
     pub fn tick(&mut self) {
         self.update_status();
-
-        self.bcm.tick(&self.status, self.timer_start.elapsed());
+        self.bcm.tick(&self.status, self.sys_clock.get_current_tick());
 
         let mut keycodes = [SdvxKeycode::No as u8; 6];
         let mut current_keycode = 0;

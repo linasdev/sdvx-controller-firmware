@@ -15,6 +15,7 @@ mod sdvx_controller;
 mod sdvx_cos_table;
 mod sdvx_keycode;
 mod sdvx_status;
+mod sdvx_sys_clock;
 
 #[entry]
 fn main() -> ! {

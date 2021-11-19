@@ -90,7 +90,7 @@ impl<A: SdvxAnimation> SdvxBcm<A> {
         }
     }
 
-    pub fn tick(&mut self, status: &SdvxStatus, current_tick: u32) {
+    pub fn tick(&mut self, status: &SdvxStatus, current_tick: u64) {
         let new_led_brightness = self.animation.tick(status, current_tick);
         self.swap_led_values(&new_led_brightness);
     }

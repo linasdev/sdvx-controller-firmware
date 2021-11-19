@@ -4,7 +4,7 @@ use crate::sdvx_cos_table::SDVX_COS_TABLE;
 use crate::sdvx_status::SdvxStatus;
 
 // Amount of ticks for the animation to end after a button is released
-const FADE_ANIMATION_TIME_TICKS: u32 = 20_000_000;
+const FADE_ANIMATION_TIME_TICKS: u64 = 20_000_000;
 const BUTTON1_LED_INDEX: usize = 18;
 const BUTTON2_LED_INDEX: usize = 19;
 const BUTTON3_LED_INDEX: usize = 20;
@@ -14,17 +14,17 @@ const FX_R_LED_INDEX: usize = 23;
 
 pub struct SdvxFadeAnimation {
     new_led_brightness: [u8; BCM_LED_COUNT],
-    start_tick: u32,
-    button1_tick: u32,
-    button2_tick: u32,
-    button3_tick: u32,
-    button4_tick: u32,
-    fx_l_tick: u32,
-    fx_r_tick: u32,
-    rotary1_tick_ccw: u32,
-    rotary1_tick_cw: u32,
-    rotary2_tick_ccw: u32,
-    rotary2_tick_cw: u32,
+    start_tick: u64,
+    button1_tick: u64,
+    button2_tick: u64,
+    button3_tick: u64,
+    button4_tick: u64,
+    fx_l_tick: u64,
+    fx_r_tick: u64,
+    rotary1_tick_ccw: u64,
+    rotary1_tick_cw: u64,
+    rotary2_tick_ccw: u64,
+    rotary2_tick_cw: u64,
 }
 
 impl SdvxAnimation for SdvxFadeAnimation {
@@ -45,7 +45,7 @@ impl SdvxAnimation for SdvxFadeAnimation {
         }
     }
 
-    fn tick(&mut self, status: &SdvxStatus, current_tick: u32) -> [u8; BCM_LED_COUNT] {
+    fn tick(&mut self, status: &SdvxStatus, current_tick: u64) -> [u8; BCM_LED_COUNT] {
         self.clear_led_values();
 
         if Self::should_animate(status.start_pressed, self.start_tick, current_tick) {
@@ -185,18 +185,18 @@ impl SdvxAnimation for SdvxFadeAnimation {
 }
 
 impl SdvxFadeAnimation {
-    fn should_animate(button_pressed: bool, button_tick: u32, current_tick: u32) -> bool {
+    fn should_animate(button_pressed: bool, button_tick: u64, current_tick: u64) -> bool {
         return button_pressed || button_tick + FADE_ANIMATION_TIME_TICKS > current_tick;
     }
 
-    fn get_cos_value(button_tick: u32, current_tick: u32) -> u8 {
+    fn get_cos_value(button_tick: u64, current_tick: u64) -> u8 {
         let floating_index = (current_tick - button_tick) as f32 / FADE_ANIMATION_TIME_TICKS as f32;
         let index = (floating_index * 255f32) as usize;
         return SDVX_COS_TABLE[index % 256];
     }
 
     fn clear_led_values(&mut self) {
-        self.new_led_brightness = [0; BCM_LED_COUNT];
+        self.new_led_brightness = [0x00; BCM_LED_COUNT];
     }
 
     fn modify_led_value_rgb(
