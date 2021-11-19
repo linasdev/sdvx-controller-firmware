@@ -62,7 +62,7 @@ pub struct SdvxController<A: SdvxAnimation> {
 impl<A: SdvxAnimation> SdvxController<A> {
     pub fn new(animation: A, mut dp: Peripherals) -> Self {
         let sys_clock = SdvxSysClock::new(dp.TIM1, dp.TIM2, dp.TIM3, &mut dp.RCC);
-        
+
         let mut flash = dp.FLASH.constrain();
         let mut rcc = dp.RCC.constrain();
 
@@ -160,7 +160,8 @@ impl<A: SdvxAnimation> SdvxController<A> {
 
     pub fn tick(&mut self) {
         self.update_status();
-        self.bcm.tick(&self.status, self.sys_clock.get_current_tick());
+        self.bcm
+            .tick(&self.status, self.sys_clock.get_current_tick());
 
         let mut keycodes = [SdvxKeycode::No as u8; 6];
         let mut current_keycode = 0;
